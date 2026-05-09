@@ -1,0 +1,587 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>PropAgent — Kraków</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+  <style>
+    :root {
+      --bg:       #F7F7F5;
+      --white:    #FFFFFF;
+      --accent:   #C0392B;
+      --dark:     #111111;
+      --mid:      #444444;
+      --muted:    #888888;
+      --border:   #E5E5E3;
+      --hover:    #F0F0EE;
+      --radius:   10px;
+      --shadow:   0 1px 4px rgba(0,0,0,.07), 0 2px 12px rgba(0,0,0,.05);
+      --shadow-hover: 0 4px 20px rgba(0,0,0,.12);
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Inter', sans-serif; background: var(--bg); color: var(--dark); font-size: 14px; }
+    a { text-decoration: none; color: inherit; }
+
+    /* HEADER */
+    header {
+      position: sticky; top: 0; z-index: 200;
+      background: var(--white); border-bottom: 1px solid var(--border);
+      height: 58px; display: flex; align-items: center;
+      padding: 0 20px; gap: 16px;
+    }
+    .logo { font-size: 17px; font-weight: 700; white-space: nowrap; letter-spacing: -.3px; }
+    .logo-prop { color: var(--accent); }
+    .logo-agent { color: var(--dark); }
+
+    .nav-link {
+      font-size: 13px; font-weight: 500; color: var(--muted);
+      padding: 5px 10px; border-radius: 6px; transition: all .12s;
+    }
+    .nav-link:hover, .nav-link.active { background: var(--hover); color: var(--dark); }
+
+    .search-wrap { flex: 1; max-width: 500px; position: relative; }
+    .search-wrap svg { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: var(--muted); pointer-events: none; }
+    .search-input {
+      width: 100%; height: 38px; padding: 0 14px 0 38px;
+      border: 1.5px solid var(--border); border-radius: 8px;
+      font-family: 'Inter', sans-serif; font-size: 13.5px;
+      background: var(--bg); color: var(--dark); outline: none;
+      transition: border-color .15s, background .15s;
+    }
+    .search-input:focus { border-color: var(--accent); background: var(--white); }
+
+    .header-count { margin-left: auto; font-size: 13px; color: var(--muted); white-space: nowrap; }
+    .header-count b { color: var(--accent); font-weight: 600; }
+
+    /* LAYOUT */
+    .page { display: flex; height: calc(100vh - 58px); overflow: hidden; }
+
+    /* SIDEBAR */
+    .sidebar {
+      width: 268px; flex-shrink: 0; background: var(--white);
+      border-right: 1px solid var(--border); overflow-y: auto; padding: 16px;
+    }
+    .sidebar::-webkit-scrollbar { width: 4px; }
+    .sidebar::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+    .sidebar-title { font-size: 10px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); margin-bottom: 14px; }
+
+    .fg { margin-bottom: 16px; }
+    .fg-label { font-size: 11.5px; font-weight: 600; color: var(--mid); margin-bottom: 7px; }
+
+    select.fg-select, input.fg-input {
+      width: 100%; height: 36px; padding: 0 10px;
+      border: 1.5px solid var(--border); border-radius: 7px;
+      font-family: 'Inter', sans-serif; font-size: 13px;
+      background: var(--bg); color: var(--dark); outline: none; transition: border-color .15s;
+    }
+    select.fg-select { appearance: none; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath fill='%23888' d='M1 1l5 5 5-5'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 10px center; padding-right: 28px; }
+    select.fg-select:focus, input.fg-input:focus { border-color: var(--accent); background: var(--white); }
+    .range { display: flex; gap: 6px; }
+    .range input { width: calc(50% - 3px); }
+
+    /* Pokoje — multi-select */
+    .rooms-row { display: flex; gap: 5px; flex-wrap: wrap; }
+    .room-btn {
+      min-width: 36px; height: 34px; padding: 0 8px;
+      border: 1.5px solid var(--border); border-radius: 7px;
+      background: var(--bg); font-family: 'Inter', sans-serif;
+      font-size: 13px; font-weight: 500; cursor: pointer;
+      transition: all .12s; color: var(--mid);
+    }
+    .room-btn:hover { border-color: var(--accent); color: var(--accent); }
+    .room-btn.on { background: var(--accent); border-color: var(--accent); color: white; }
+    .rooms-note { font-size: 10px; color: var(--muted); margin-top: 5px; }
+
+    /* Portal pills */
+    .portal-row { display: flex; gap: 5px; flex-wrap: wrap; }
+    .portal-btn {
+      padding: 5px 11px; border-radius: 20px; border: 1.5px solid var(--border);
+      background: var(--bg); font-family: 'Inter', sans-serif;
+      font-size: 11px; font-weight: 600; cursor: pointer;
+      text-transform: uppercase; letter-spacing: .04em; color: var(--mid); transition: all .12s;
+    }
+    .portal-btn:hover { border-color: var(--accent); color: var(--accent); }
+    .portal-btn.on-wszystkie { background: var(--dark); border-color: var(--dark); color: white; }
+    .portal-btn.on-otodom    { background: #C0392B; border-color: #C0392B; color: white; }
+    .portal-btn.on-gratka    { background: #1D4ED8; border-color: #1D4ED8; color: white; }
+    .portal-btn.on-nro       { background: #047857; border-color: #047857; color: white; }
+
+    .btn-search {
+      width: 100%; height: 38px; background: var(--accent); color: white; border: none;
+      border-radius: 8px; font-family: 'Inter', sans-serif;
+      font-size: 13.5px; font-weight: 600; cursor: pointer; margin-top: 4px; transition: background .12s;
+    }
+    .btn-search:hover { background: #a93226; }
+    .btn-reset {
+      display: block; width: 100%; text-align: center; margin-top: 8px;
+      font-size: 12px; color: var(--muted); background: none; border: none;
+      cursor: pointer; font-family: 'Inter', sans-serif; padding: 4px;
+    }
+    .btn-reset:hover { color: var(--accent); }
+    .divider { height: 1px; background: var(--border); margin: 14px 0; }
+
+    /* CONTENT */
+    .content { flex: 1; overflow-y: auto; padding: 16px 20px; }
+    .content::-webkit-scrollbar { width: 6px; }
+    .content::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+    /* Toolbar */
+    .toolbar { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; gap: 10px; flex-wrap: wrap; }
+    .toolbar-left { font-size: 13.5px; color: var(--mid); }
+    .toolbar-left b { color: var(--dark); font-size: 15px; }
+    .toolbar-right { display: flex; align-items: center; gap: 8px; }
+
+    .view-btns { display: flex; border: 1.5px solid var(--border); border-radius: 7px; overflow: hidden; }
+    .view-btn { width: 32px; height: 30px; display: flex; align-items: center; justify-content: center; background: var(--white); border: none; cursor: pointer; color: var(--muted); transition: all .12s; }
+    .view-btn + .view-btn { border-left: 1px solid var(--border); }
+    .view-btn.on { background: var(--accent); color: white; }
+    .view-btn:hover:not(.on) { background: var(--hover); }
+
+    .map-btn {
+      height: 32px; padding: 0 12px; border: 1.5px solid var(--border); border-radius: 7px;
+      background: var(--white); font-family: 'Inter', sans-serif; font-size: 12.5px; font-weight: 500;
+      cursor: pointer; color: var(--mid); display: flex; align-items: center; gap: 6px; transition: all .12s;
+    }
+    .map-btn:hover, .map-btn.on { border-color: var(--accent); color: var(--accent); background: #FFF0EE; }
+
+    .sort-sel {
+      height: 32px; padding: 0 10px; border: 1.5px solid var(--border); border-radius: 7px;
+      font-family: 'Inter', sans-serif; font-size: 12.5px;
+      background: var(--white); color: var(--dark); outline: none; cursor: pointer;
+    }
+    .sort-sel:focus { border-color: var(--accent); }
+
+    /* Mapa */
+    #map-wrap { border-radius: var(--radius); overflow: hidden; margin-bottom: 14px; display: none; box-shadow: var(--shadow); }
+    #map-wrap.on { display: block; }
+    #map { height: 340px; }
+
+    /* GRID */
+    .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(270px, 1fr)); gap: 14px; }
+
+    /* LIST */
+    .list { display: flex; flex-direction: column; gap: 10px; }
+
+    /* CARD — grid */
+    .card {
+      background: var(--white); border-radius: var(--radius); border: 1px solid var(--border);
+      box-shadow: var(--shadow); overflow: hidden; display: flex; flex-direction: column;
+      cursor: pointer; transition: box-shadow .18s, transform .18s;
+    }
+    .card:hover { box-shadow: var(--shadow-hover); transform: translateY(-2px); }
+
+    .card-img-wrap { position: relative; flex-shrink: 0; }
+    .card-img { width: 100%; height: 185px; object-fit: cover; display: block; background: var(--border); }
+    .card-img-ph { width: 100%; height: 185px; display: flex; align-items: center; justify-content: center; background: linear-gradient(135deg, #f0ede8, #e8e4dc); color: var(--border); font-size: 2.5rem; }
+    .portal-tag { position: absolute; top: 10px; left: 10px; padding: 3px 8px; border-radius: 5px; font-size: 10px; font-weight: 700; letter-spacing: .05em; text-transform: uppercase; color: white; }
+    .tag-otodom { background: #C0392B; }
+    .tag-gratka { background: #1D4ED8; }
+    .tag-nro    { background: #047857; }
+    .rynek-tag { position: absolute; bottom: 10px; left: 10px; padding: 2px 7px; border-radius: 4px; font-size: 9.5px; font-weight: 700; text-transform: uppercase; }
+    .rynek-pierwotny { background: #D1FAE5; color: #065F46; }
+    .rynek-wtorny    { background: #FEF3C7; color: #92400E; }
+
+    .card-body { padding: 12px 14px; flex: 1; display: flex; flex-direction: column; gap: 6px; }
+    .card-price { font-size: 17px; font-weight: 700; line-height: 1; }
+    .card-price-m2 { font-size: 11.5px; color: var(--muted); margin-top: 1px; }
+    .card-title { font-size: 12.5px; color: var(--mid); line-height: 1.4; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+    .card-chips { display: flex; flex-wrap: wrap; gap: 4px; margin-top: auto; padding-top: 4px; }
+    .chip { padding: 2px 7px; border-radius: 5px; background: var(--bg); border: 1px solid var(--border); font-size: 11px; color: var(--mid); font-weight: 500; }
+    .card-addr { font-size: 11.5px; color: var(--muted); display: flex; align-items: center; gap: 3px; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+
+    /* CARD — list */
+    .lcard {
+      background: var(--white); border-radius: var(--radius); border: 1px solid var(--border);
+      box-shadow: var(--shadow); display: none; overflow: hidden; cursor: pointer;
+      transition: box-shadow .18s; height: 150px;
+    }
+    .lcard:hover { box-shadow: var(--shadow-hover); }
+    .lcard-img { width: 190px; flex-shrink: 0; position: relative; overflow: hidden; }
+    .lcard-img img { width: 100%; height: 100%; object-fit: cover; display: block; }
+    .lcard-img-ph { width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; background: linear-gradient(135deg, #f0ede8, #e8e4dc); color: var(--border); font-size: 2rem; }
+    .lcard-body { flex: 1; padding: 12px 14px; display: flex; flex-direction: column; gap: 5px; overflow: hidden; }
+    .lcard-price { font-size: 17px; font-weight: 700; }
+    .lcard-price-m2 { font-size: 11.5px; color: var(--muted); }
+    .lcard-title { font-size: 13px; font-weight: 500; color: var(--dark); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .lcard-chips { display: flex; flex-wrap: wrap; gap: 3px; }
+    .lcard-addr { font-size: 11.5px; color: var(--muted); margin-top: auto; }
+
+    /* EMPTY */
+    .empty { text-align: center; padding: 60px 20px; color: var(--muted); grid-column: 1/-1; }
+    .empty h3 { font-size: 16px; color: var(--mid); margin-bottom: 8px; }
+
+    /* PAGINATION */
+    .pag { display: flex; justify-content: center; gap: 5px; margin-top: 28px; flex-wrap: wrap; }
+    .pag a, .pag span { min-width: 34px; height: 34px; display: flex; align-items: center; justify-content: center; border-radius: 7px; border: 1.5px solid var(--border); font-size: 13px; font-weight: 500; color: var(--mid); background: var(--white); transition: all .12s; padding: 0 10px; }
+    .pag a:hover { border-color: var(--accent); color: var(--accent); }
+    .pag .cur { background: var(--accent); border-color: var(--accent); color: white; }
+    .pag .off { opacity: .4; pointer-events: none; }
+  </style>
+</head>
+<body>
+
+<!-- HEADER -->
+<header>
+  <a href="/" class="logo"><span class="logo-prop">Prop</span><span class="logo-agent">Agent</span></a>
+  <a href="/" class="nav-link active">Oferty</a>
+  <a href="/analiza" class="nav-link">Analiza rynku</a>
+
+  <form class="search-wrap" method="GET" action="/" id="search-form">
+    <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+      <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
+    </svg>
+    <input class="search-input" type="text" name="q"
+           placeholder="Szukaj po dzielnicy, ulicy, słowie kluczowym..."
+           value="{{ filtry.q }}"
+           onchange="document.getElementById('search-form').submit()">
+    {% for k,v in filtry.items() %}{% if k != 'q' and v %}<input type="hidden" name="{{ k }}" value="{{ v }}">{% endif %}{% endfor %}
+  </form>
+
+  <div class="header-count">Znaleziono <b>{{ lacznie }}</b> ofert</div>
+</header>
+
+<!-- PAGE -->
+<div class="page">
+
+  <!-- SIDEBAR -->
+  <aside class="sidebar">
+    <div class="sidebar-title">Filtry</div>
+    <form method="GET" action="/" id="ff">
+      <input type="hidden" name="q" value="{{ filtry.q }}">
+
+      <!-- Portal -->
+      <div class="fg">
+        <div class="fg-label">Portal</div>
+        <div class="portal-row">
+          {% for pid, pname in [('wszystkie','Wszystkie'),('otodom','OtoDom'),('gratka','Gratka'),('nro','NRO')] %}
+          <button type="button"
+            class="portal-btn {% if filtry.portal == pid %}on-{{ pid }}{% endif %}"
+            onclick="setPortal('{{ pid }}')">{{ pname }}</button>
+          {% endfor %}
+        </div>
+        <input type="hidden" name="portal" id="portal-val" value="{{ filtry.portal }}">
+      </div>
+
+      <div class="divider"></div>
+
+      <!-- Cena -->
+      <div class="fg">
+        <div class="fg-label">Cena (PLN)</div>
+        <div class="range">
+          <input class="fg-input" type="number" name="cena_min" placeholder="Od" value="{{ filtry.cena_min }}" min="0" step="10000">
+          <input class="fg-input" type="number" name="cena_max" placeholder="Do" value="{{ filtry.cena_max }}" min="0" step="10000">
+        </div>
+      </div>
+
+      <!-- Cena za m² -->
+      <div class="fg">
+        <div class="fg-label">Cena za m² (PLN/m²)</div>
+        <div class="range">
+          <input class="fg-input" type="number" name="cena_m2_min" placeholder="Od" value="{{ filtry.cena_m2_min }}" min="0" step="500">
+          <input class="fg-input" type="number" name="cena_m2_max" placeholder="Do" value="{{ filtry.cena_m2_max }}" min="0" step="500">
+        </div>
+      </div>
+
+      <!-- Metraż -->
+      <div class="fg">
+        <div class="fg-label">Metraż (m²)</div>
+        <div class="range">
+          <input class="fg-input" type="number" name="metraz_min" placeholder="Od" value="{{ filtry.metraz_min }}" min="0">
+          <input class="fg-input" type="number" name="metraz_max" placeholder="Do" value="{{ filtry.metraz_max }}" min="0">
+        </div>
+      </div>
+
+      <!-- Pokoje — multi-select -->
+      <div class="fg">
+        <div class="fg-label">Liczba pokoi</div>
+        <div class="rooms-row">
+          {% set sel = filtry.pokoje.split(',') if filtry.pokoje else [] %}
+          {% for rv in ['1','2','3','4','5'] %}
+          <button type="button"
+            class="room-btn {% if rv in sel %}on{% endif %}"
+            onclick="toggleRoom('{{ rv }}')">{{ rv }}{% if rv == '5' %}+{% endif %}</button>
+          {% endfor %}
+        </div>
+        <div class="rooms-note">Możesz wybrać kilka opcji</div>
+        <input type="hidden" name="pokoje" id="room-val" value="{{ filtry.pokoje }}">
+      </div>
+
+      <div class="divider"></div>
+
+      <!-- Rynek -->
+      <div class="fg">
+        <div class="fg-label">Rynek</div>
+        <select class="fg-select" name="rynek">
+          <option value="wszystkie" {% if filtry.rynek=='wszystkie' %}selected{% endif %}>Wszystkie</option>
+          <option value="pierwotny" {% if filtry.rynek=='pierwotny' %}selected{% endif %}>Pierwotny</option>
+          <option value="wtórny"    {% if filtry.rynek=='wtórny'    %}selected{% endif %}>Wtórny</option>
+        </select>
+      </div>
+
+      <!-- Rok budowy -->
+      <div class="fg">
+        <div class="fg-label">Rok budowy</div>
+        <div class="range">
+          <input class="fg-input" type="number" name="rok_min" placeholder="Od" value="{{ filtry.rok_min }}" min="1900" max="2030">
+          <input class="fg-input" type="number" name="rok_max" placeholder="Do" value="{{ filtry.rok_max }}" min="1900" max="2030">
+        </div>
+      </div>
+
+      <!-- Piętro -->
+      <div class="fg">
+        <div class="fg-label">Piętro</div>
+        <div class="range">
+          <input class="fg-input" type="number" name="pietro_min" placeholder="Od" value="{{ filtry.pietro_min }}" min="0">
+          <input class="fg-input" type="number" name="pietro_max" placeholder="Do" value="{{ filtry.pietro_max }}" min="0">
+        </div>
+      </div>
+
+      <button type="submit" class="btn-search">Szukaj</button>
+      <a href="/" class="btn-reset">Wyczyść filtry</a>
+    </form>
+  </aside>
+
+  <!-- CONTENT -->
+  <div class="content">
+
+    <!-- Toolbar -->
+    <div class="toolbar">
+      <div class="toolbar-left">
+        {% if lacznie > 0 %}
+          <b>{{ lacznie }}</b> ofert{% if filtry.q %} dla „{{ filtry.q }}"{% endif %}
+        {% else %}
+          Brak wyników
+        {% endif %}
+      </div>
+      <div class="toolbar-right">
+        <button class="map-btn" id="map-btn" onclick="toggleMap()">
+          <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z"/><circle cx="12" cy="9" r="2.5"/>
+          </svg>
+          Mapa
+        </button>
+        <div class="view-btns">
+          <button class="view-btn on" id="vg" onclick="setView('grid')" title="Siatka">
+            <svg width="13" height="13" fill="currentColor" viewBox="0 0 16 16"><path d="M1 2a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v2a1 1 0 0 1-1 1H2a1 1 0 0 1-1-1V2zm5 0a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v2a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1V2zm5 0a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v2a1 1 0 0 1-1 1h-2a1 1 0 0 1-1-1V2zM1 7a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v2a1 1 0 0 1-1 1H2a1 1 0 0 1-1-1V7zm5 0a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v2a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1V7zm5 0a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v2a1 1 0 0 1-1 1h-2a1 1 0 0 1-1-1V7zM1 12a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v2a1 1 0 0 1-1 1H2a1 1 0 0 1-1-1v-2zm5 0a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v2a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1v-2zm5 0a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v2a1 1 0 0 1-1 1h-2a1 1 0 0 1-1-1v-2z"/></svg>
+          </button>
+          <button class="view-btn" id="vl" onclick="setView('list')" title="Lista">
+            <svg width="13" height="13" fill="currentColor" viewBox="0 0 16 16"><path fill-rule="evenodd" d="M2.5 12a.5.5 0 0 1 .5-.5h10a.5.5 0 0 1 0 1H3a.5.5 0 0 1-.5-.5zm0-4a.5.5 0 0 1 .5-.5h10a.5.5 0 0 1 0 1H3a.5.5 0 0 1-.5-.5zm0-4a.5.5 0 0 1 .5-.5h10a.5.5 0 0 1 0 1H3a.5.5 0 0 1-.5-.5z"/></svg>
+          </button>
+        </div>
+        <form method="GET" style="display:flex;gap:5px" id="sort-form">
+          {% for k,v in filtry.items() %}{% if v %}<input type="hidden" name="{{ k }}" value="{{ v }}">{% endif %}{% endfor %}
+          <select class="sort-sel" name="sort" onchange="document.getElementById('sort-form').submit()">
+            <option value="last_seen"  {% if sort=='last_seen'  %}selected{% endif %}>Najnowsze</option>
+            <option value="cena_pln"   {% if sort=='cena_pln'   %}selected{% endif %}>Cena</option>
+            <option value="metraz"     {% if sort=='metraz'     %}selected{% endif %}>Metraż</option>
+            <option value="cena_za_m2" {% if sort=='cena_za_m2' %}selected{% endif %}>Cena/m²</option>
+            <option value="rok_budowy" {% if sort=='rok_budowy' %}selected{% endif %}>Rok budowy</option>
+          </select>
+          <select class="sort-sel" name="kierunek" onchange="document.getElementById('sort-form').submit()">
+            <option value="desc" {% if kierunek=='desc' %}selected{% endif %}>Malejąco</option>
+            <option value="asc"  {% if kierunek=='asc'  %}selected{% endif %}>Rosnąco</option>
+          </select>
+        </form>
+      </div>
+    </div>
+
+    <!-- Mapa -->
+    <div id="map-wrap"><div id="map"></div></div>
+
+    <!-- Oferty -->
+    {% if mieszkania %}
+    <div class="grid" id="cards">
+      {% for m in mieszkania %}
+
+      <!-- KARTA GRID -->
+      <div class="card" onclick="window.open('{{ m.url }}','_blank')">
+        <div class="card-img-wrap">
+          {% if m.zdjecie_url %}
+            <img class="card-img" src="{{ m.zdjecie_url }}" alt="{{ m.tytul }}" loading="lazy"
+                 onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">
+            <div class="card-img-ph" style="display:none">&#127968;</div>
+          {% else %}
+            <div class="card-img-ph">&#127968;</div>
+          {% endif %}
+          <span class="portal-tag tag-{{ m.portal }}">{{ m.portal }}</span>
+          {% if m.rynek %}
+          <span class="rynek-tag {{ 'rynek-pierwotny' if m.rynek == 'pierwotny' else 'rynek-wtorny' }}">{{ m.rynek }}</span>
+          {% endif %}
+        </div>
+        <div class="card-body">
+          <div>
+            <div class="card-price">{% if m.cena_pln %}{{ "{:,.0f}".format(m.cena_pln).replace(",", " ") }} zł{% else %}Cena do uzgodnienia{% endif %}</div>
+            {% if m.cena_za_m2 %}<div class="card-price-m2">{{ "{:,.0f}".format(m.cena_za_m2).replace(",", " ") }} zł/m²</div>{% endif %}
+          </div>
+          <div class="card-title">{{ m.tytul or "Brak tytułu" }}</div>
+          <div class="card-chips">
+            {% if m.metraz %}<span class="chip">{{ "%.0f"|format(m.metraz) }} m²</span>{% endif %}
+            {% if m.pokoje %}<span class="chip">{{ m.pokoje }} pok.</span>{% endif %}
+            {% if m.pietro %}<span class="chip">p. {{ m.pietro }}</span>{% endif %}
+            {% if m.rok_budowy %}<span class="chip">{{ m.rok_budowy }}</span>{% endif %}
+          </div>
+          {% if m.adres_pelny %}
+          <div class="card-addr">
+            <svg width="10" height="10" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z"/></svg>
+            {{ m.adres_pelny }}
+          </div>
+          {% endif %}
+        </div>
+      </div>
+
+      <!-- KARTA LIST -->
+      <div class="lcard" onclick="window.open('{{ m.url }}','_blank')">
+        <div class="lcard-img">
+          {% if m.zdjecie_url %}
+            <img src="{{ m.zdjecie_url }}" alt="{{ m.tytul }}" loading="lazy"
+                 onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">
+            <div class="lcard-img-ph" style="display:none">&#127968;</div>
+          {% else %}
+            <div class="lcard-img-ph">&#127968;</div>
+          {% endif %}
+          <span class="portal-tag tag-{{ m.portal }}">{{ m.portal }}</span>
+          {% if m.rynek %}
+          <span class="rynek-tag {{ 'rynek-pierwotny' if m.rynek == 'pierwotny' else 'rynek-wtorny' }}">{{ m.rynek }}</span>
+          {% endif %}
+        </div>
+        <div class="lcard-body">
+          <div class="lcard-price">{% if m.cena_pln %}{{ "{:,.0f}".format(m.cena_pln).replace(",", " ") }} zł{% else %}—{% endif %}</div>
+          {% if m.cena_za_m2 %}<div class="lcard-price-m2">{{ "{:,.0f}".format(m.cena_za_m2).replace(",", " ") }} zł/m²</div>{% endif %}
+          <div class="lcard-title">{{ m.tytul or "Brak tytułu" }}</div>
+          <div class="lcard-chips">
+            {% if m.metraz %}<span class="chip">{{ "%.0f"|format(m.metraz) }} m²</span>{% endif %}
+            {% if m.pokoje %}<span class="chip">{{ m.pokoje }} pok.</span>{% endif %}
+            {% if m.pietro %}<span class="chip">p. {{ m.pietro }}</span>{% endif %}
+            {% if m.rok_budowy %}<span class="chip">{{ m.rok_budowy }}</span>{% endif %}
+          </div>
+          {% if m.adres_pelny %}<div class="lcard-addr">{{ m.adres_pelny }}</div>{% endif %}
+        </div>
+      </div>
+
+      {% endfor %}
+    </div>
+
+    {% else %}
+    <div class="grid">
+      <div class="empty">
+        <h3>Brak wyników</h3>
+        <p>Zmień kryteria wyszukiwania lub <a href="/" style="color:var(--accent)">wyczyść filtry</a>.</p>
+      </div>
+    </div>
+    {% endif %}
+
+    <!-- Paginacja -->
+    {% if liczba_stron > 1 %}
+    <nav class="pag">
+      {% set p = request.args.to_dict() %}
+      {% if strona > 1 %}
+        {% set _ = p.update({'strona': strona-1}) %}<a href="?{{ p|urlencode }}">&#8592; Poprzednia</a>
+      {% else %}<span class="off">&#8592; Poprzednia</span>{% endif %}
+
+      {% for n in range([1,strona-2]|max, [liczba_stron+1,strona+3]|min) %}
+        {% set _ = p.update({'strona': n}) %}
+        {% if n==strona %}<span class="cur">{{ n }}</span>
+        {% else %}<a href="?{{ p|urlencode }}">{{ n }}</a>{% endif %}
+      {% endfor %}
+
+      {% if strona < liczba_stron %}
+        {% set _ = p.update({'strona': strona+1}) %}<a href="?{{ p|urlencode }}">Następna &#8594;</a>
+      {% else %}<span class="off">Następna &#8594;</span>{% endif %}
+    </nav>
+    {% endif %}
+
+  </div>
+</div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+// ── PORTAL ──
+function setPortal(v) {
+  document.getElementById('portal-val').value = v;
+  document.querySelectorAll('.portal-btn').forEach(b => {
+    b.className = 'portal-btn';
+    const map = {'wszystkie':'wszystkie','otodom':'otodom','gratka':'gratka','nro':'nro'};
+    const k = b.textContent.trim().toLowerCase();
+    const pid = k === 'wszystkie' ? 'wszystkie' : k === 'otodom' ? 'otodom' : k === 'gratka' ? 'gratka' : k === 'nro' ? 'nro' : '';
+    if (pid === v) b.classList.add('on-' + v);
+  });
+}
+
+// ── POKOJE — multi-select ──
+let selRooms = new Set('{{ filtry.pokoje }}'.split(',').filter(x => x.trim()));
+function toggleRoom(v) {
+  if (selRooms.has(v)) selRooms.delete(v);
+  else selRooms.add(v);
+  document.getElementById('room-val').value = [...selRooms].join(',');
+  document.querySelectorAll('.room-btn').forEach(b => {
+    const bv = b.textContent.trim().replace('+', '');
+    b.classList.toggle('on', selRooms.has(bv));
+  });
+}
+
+// ── WIDOK ──
+function setView(v) {
+  const cards  = document.querySelectorAll('.card');
+  const lcards = document.querySelectorAll('.lcard');
+  const wrap   = document.getElementById('cards');
+  if (v === 'list') {
+    wrap.className = 'list';
+    cards.forEach(c  => c.style.display = 'none');
+    lcards.forEach(c => c.style.display = 'flex');
+    document.getElementById('vl').classList.add('on');
+    document.getElementById('vg').classList.remove('on');
+  } else {
+    wrap.className = 'grid';
+    cards.forEach(c  => c.style.display = 'flex');
+    lcards.forEach(c => c.style.display = 'none');
+    document.getElementById('vg').classList.add('on');
+    document.getElementById('vl').classList.remove('on');
+  }
+}
+
+// ── MAPA ──
+let mapObj = null, mapVisible = false;
+function toggleMap() {
+  const wrap = document.getElementById('map-wrap');
+  const btn  = document.getElementById('map-btn');
+  mapVisible = !mapVisible;
+  wrap.classList.toggle('on', mapVisible);
+  btn.classList.toggle('on', mapVisible);
+  if (mapVisible && !mapObj) {
+    mapObj = L.map('map').setView([50.0614, 19.9366], 12);
+    L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
+      attribution: '© OpenStreetMap © CARTO', maxZoom: 19
+    }).addTo(mapObj);
+    fetch('/api/markers').then(r => r.json()).then(data => {
+      data.forEach((m, i) => setTimeout(() => addMarker(m), i * 100));
+    });
+  }
+}
+
+function addMarker(m) {
+  const q = encodeURIComponent((m.adres_pelny || m.dzielnica || '') + ', Kraków, Poland');
+  fetch(`https://nominatim.openstreetmap.org/search?q=${q}&format=json&limit=1`)
+    .then(r => r.json()).then(res => {
+      if (!res.length) return;
+      const colors = { otodom: '#C0392B', gratka: '#1D4ED8', nro: '#047857' };
+      const c = colors[m.portal] || '#888';
+      const icon = L.divIcon({
+        html: `<div style="width:10px;height:10px;border-radius:50%;background:${c};border:2px solid white;box-shadow:0 1px 4px rgba(0,0,0,.3)"></div>`,
+        className: '', iconSize: [10, 10], iconAnchor: [5, 5]
+      });
+      const cena = m.cena_pln ? new Intl.NumberFormat('pl').format(m.cena_pln) + ' zł' : '—';
+      L.marker([+res[0].lat, +res[0].lon], { icon }).addTo(mapObj)
+       .bindPopup(`<div style="font-family:Inter,sans-serif;min-width:160px">
+         ${m.zdjecie_url ? `<img src="${m.zdjecie_url}" style="width:100%;height:80px;object-fit:cover;border-radius:5px;margin-bottom:6px">` : ''}
+         <strong style="font-size:13px">${cena}</strong><br>
+         <span style="font-size:11px;color:#666">${m.metraz ? m.metraz + ' m² · ' : ''}${m.adres_pelny || ''}</span><br>
+         <a href="${m.url}" target="_blank" style="font-size:11px;color:${c};font-weight:600">Otwórz ofertę →</a>
+       </div>`);
+    }).catch(() => {});
+}
+</script>
+</body>
+</html>

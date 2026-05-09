@@ -169,9 +169,14 @@
     .card {
       background: var(--white); border-radius: var(--radius); border: 1px solid var(--border);
       box-shadow: var(--shadow); overflow: hidden; display: flex; flex-direction: column;
-      cursor: pointer; transition: box-shadow .18s, transform .18s;
+      cursor: pointer; transition: box-shadow .2s, transform .2s, border-color .2s;
     }
     .card:hover { box-shadow: var(--shadow-hover); transform: translateY(-2px); }
+    .card.map-active {
+      border-color: #059669;
+      box-shadow: 0 0 0 2px rgba(5,150,105,.25), var(--shadow-hover);
+      transform: translateY(-2px) scale(1.012);
+    }
 
     .card-img-wrap { position: relative; flex-shrink: 0; }
     .card-img { width: 100%; height: 185px; object-fit: cover; display: block; background: var(--border); }
@@ -187,7 +192,7 @@
     .card-body { padding: 12px 14px; flex: 1; display: flex; flex-direction: column; gap: 6px; }
     .card-price { font-size: 17px; font-weight: 700; line-height: 1; }
     .card-price-m2 { font-size: 11.5px; color: var(--muted); margin-top: 1px; }
-    .card-title { font-size: 12.5px; color: var(--mid); line-height: 1.4; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+    .card-title { font-size: 12.5px; color: var(--mid); line-height: 1.4; display: -webkit-box; -webkit-line-clamp: 2; line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
     .card-chips { display: flex; flex-wrap: wrap; gap: 4px; margin-top: auto; padding-top: 4px; }
     .chip { padding: 2px 7px; border-radius: 5px; background: var(--bg); border: 1px solid var(--border); font-size: 11px; color: var(--mid); font-weight: 500; }
     .card-addr { font-size: 11.5px; color: var(--muted); display: flex; align-items: center; gap: 3px; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
@@ -199,20 +204,36 @@
       transition: box-shadow .18s, border-color .18s; min-height: 180px;
     }
     .lcard:hover { box-shadow: var(--shadow-hover); }
-    .lcard.map-highlight { border-color: var(--accent); box-shadow: 0 0 0 2px rgba(192,57,43,.25), var(--shadow-hover); }
+    .lcard.map-active {
+      border-color: #059669;
+      box-shadow: 0 0 0 2px rgba(5,150,105,.25), var(--shadow-hover);
+      transform: scale(1.008);
+    }
     .lcard-img { width: 260px; flex-shrink: 0; position: relative; overflow: hidden; }
     .lcard-img img { width: 100%; height: 100%; object-fit: cover; display: block; }
     .lcard-img-ph { width: 100%; height: 100%; min-height: 180px; display: flex; align-items: center; justify-content: center; background: linear-gradient(135deg, #f0ede8, #e8e4dc); color: var(--border); font-size: 2rem; }
     .lcard-body { flex: 1; padding: 14px 18px; display: flex; flex-direction: column; gap: 6px; overflow: hidden; min-width: 0; }
     .lcard-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
-    .lcard-pricing {}
     .lcard-price { font-size: 19px; font-weight: 700; line-height: 1.1; }
     .lcard-price-m2 { font-size: 12px; color: var(--muted); margin-top: 2px; }
     .lcard-portal-badge { padding: 3px 9px; border-radius: 5px; font-size: 10px; font-weight: 700; letter-spacing: .05em; text-transform: uppercase; color: white; flex-shrink: 0; align-self: flex-start; }
-    .lcard-title { font-size: 13.5px; font-weight: 500; color: var(--dark); overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; line-height: 1.45; }
+    .lcard-title { font-size: 13.5px; font-weight: 500; color: var(--dark); overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; line-clamp: 2; -webkit-box-orient: vertical; line-height: 1.45; }
     .lcard-chips { display: flex; flex-wrap: wrap; gap: 4px; }
-    .lcard-addr { font-size: 12px; color: var(--muted); margin-top: auto; display: flex; align-items: center; gap: 4px; }
+    .lcard-bottom { margin-top: auto; display: flex; flex-direction: column; gap: 4px; }
+    .lcard-addr { font-size: 12px; color: var(--muted); display: flex; align-items: center; gap: 4px; }
     .lcard-rynek { display: inline-flex; padding: 2px 7px; border-radius: 4px; font-size: 10px; font-weight: 700; text-transform: uppercase; align-self: flex-start; }
+
+    /* Przycisk „Pokaż na mapie" na kafelku */
+    .btn-show-map {
+      display: inline-flex; align-items: center; gap: 5px;
+      margin-top: 6px; padding: 5px 10px;
+      border: 1.5px solid var(--border); border-radius: 6px;
+      background: var(--bg); font-family: 'Inter', sans-serif;
+      font-size: 11px; font-weight: 600; color: var(--mid);
+      cursor: pointer; transition: all .12s; align-self: flex-start;
+    }
+    .btn-show-map:hover { border-color: #059669; color: #059669; background: #F0FDF4; }
+    .btn-show-map svg { flex-shrink: 0; }
 
     /* EMPTY */
     .empty { text-align: center; padding: 60px 20px; color: var(--muted); grid-column: 1/-1; }
@@ -403,9 +424,7 @@
 
       <!-- KARTA GRID -->
       <div class="card" onclick="window.open('{{ m.url }}','_blank')"
-           data-id="{{ m.auction_id }}"
-           onmouseenter="cardHover('{{ m.auction_id }}', true)"
-           onmouseleave="cardHover('{{ m.auction_id }}', false)">
+           data-id="{{ m.auction_id }}">
         <div class="card-img-wrap">
           {% if m.zdjecie_url %}
             <img class="card-img" src="{{ m.zdjecie_url }}" alt="{{ m.tytul }}" loading="lazy"
@@ -437,14 +456,16 @@
             {{ m.adres_pelny }}
           </div>
           {% endif %}
+          <button class="btn-show-map" onclick="showOnMap('{{ m.auction_id }}', event)">
+            <svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z"/><circle cx="12" cy="9" r="2.5"/></svg>
+            Pokaż na mapie
+          </button>
         </div>
       </div>
 
       <!-- KARTA LIST -->
       <div class="lcard" onclick="window.open('{{ m.url }}','_blank')"
-           data-id="{{ m.auction_id }}"
-           onmouseenter="cardHover('{{ m.auction_id }}', true)"
-           onmouseleave="cardHover('{{ m.auction_id }}', false)">
+           data-id="{{ m.auction_id }}">
         <div class="lcard-img">
           {% if m.zdjecie_url %}
             <img src="{{ m.zdjecie_url }}" alt="{{ m.tytul }}" loading="lazy"
@@ -470,12 +491,18 @@
             {% if m.rok_budowy %}<span class="chip">{{ m.rok_budowy }}</span>{% endif %}
             {% if m.rynek %}<span class="chip lcard-rynek {{ 'rynek-pierwotny' if m.rynek == 'pierwotny' else 'rynek-wtorny' }}">{{ m.rynek }}</span>{% endif %}
           </div>
-          {% if m.adres_pelny %}
-          <div class="lcard-addr">
-            <svg width="10" height="10" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z"/></svg>
-            {{ m.adres_pelny }}
+          <div class="lcard-bottom">
+            {% if m.adres_pelny %}
+            <div class="lcard-addr">
+              <svg width="10" height="10" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z"/></svg>
+              {{ m.adres_pelny }}
+            </div>
+            {% endif %}
+            <button class="btn-show-map" onclick="showOnMap('{{ m.auction_id }}', event)">
+              <svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z"/><circle cx="12" cy="9" r="2.5"/></svg>
+              Pokaż na mapie
+            </button>
           </div>
-          {% endif %}
         </div>
       </div>
 
@@ -607,8 +634,16 @@ function buildPopup(listings) {
         background:${c};color:#fff;padding:1px 5px;border-radius:3px">${m.portal}</span><br>
       <span style="font-size:11px;color:#555">${meta}</span><br>
       ${m.adres_pelny ? `<span style="font-size:10.5px;color:#888">${m.adres_pelny}</span><br>` : ''}
-      <a href="${m.url}" target="_blank"
-         style="font-size:11px;color:${c};font-weight:600">Otwórz ofertę →</a>
+      <div style="display:flex;gap:8px;align-items:center;margin-top:5px;flex-wrap:wrap">
+        <a href="${m.url}" target="_blank"
+           style="font-size:11px;color:${c};font-weight:600">Otwórz ofertę →</a>
+        <button onclick="scrollToCard('${m.auction_id}')"
+          style="font-size:10.5px;font-weight:600;padding:3px 8px;border-radius:5px;
+                 border:1.5px solid #059669;color:#059669;background:#F0FDF4;
+                 cursor:pointer;font-family:Inter,sans-serif;white-space:nowrap">
+          ↓ Przenieś do oferty
+        </button>
+      </div>
     </div>`;
   });
 
@@ -637,6 +672,10 @@ function addOrMergeMarker(m, lat, lng) {
                   .bindPopup(buildPopup([m]), { maxWidth: 240 });
     clusters[key] = { marker: mk, listings: [m] };
     markerById[m.auction_id] = mk;
+
+    // Mapa → karty: podświetl kafelki po otwarciu/zamknięciu popupu
+    mk.on('popupopen',  () => highlightCards(clusters[key].listings, true));
+    mk.on('popupclose', () => highlightCards(clusters[key].listings, false));
   }
 
   // Zawsze rejestruj auction_id → marker (dla hover z karty)
@@ -690,31 +729,50 @@ function toggleMap() {
   if (mapVisible && mapObj) setTimeout(() => mapObj.invalidateSize(), 50);
 }
 
-// ── Hover karta ↔ marker ────────────────────────────────────────────────────
-function cardHover(id, entering) {
-  // Podświetl kafelek listy (grid nie zmienia się, bo ma własny hover CSS)
-  document.querySelectorAll(`.lcard[data-id="${id}"]`).forEach(el => {
-    el.classList.toggle('map-highlight', entering);
+// ── Podświetlanie kart z mapy (bez auto-scroll) ─────────────────────────────
+function highlightCards(listings, on) {
+  listings.forEach(m => {
+    document.querySelectorAll(`[data-id="${m.auction_id}"]`).forEach(el => {
+      el.classList.toggle('map-active', on);
+    });
   });
+}
 
-  if (!mapObj) return;
-  const mk = markerById[id];
-  if (!mk) return;
+// ── Scroll do kafelka (wywoływany z dymku mapy) ─────────────────────────────
+function scrollToCard(id) {
+  document.querySelectorAll(`[data-id="${id}"]`).forEach(el => {
+    if (el.offsetParent === null) return; // niewidoczny (grid przy widoku listy lub odwrotnie)
+    el.classList.add('map-active');
+    el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    // Zdejmij podświetlenie po 3s
+    clearTimeout(el._mapTimer);
+    el._mapTimer = setTimeout(() => el.classList.remove('map-active'), 3000);
+  });
+}
 
-  const [lat, lng] = [mk.getLatLng().lat, mk.getLatLng().lng];
-  const key = lat.toFixed(4) + ',' + lng.toFixed(4);
-  const cl  = clusters[key];
-  if (!cl) return;
+// ── Pokaż na mapie (wywoływany z przycisku na kafelku) ──────────────────────
+function showOnMap(id, event) {
+  event.stopPropagation(); // nie otwieraj ogłoszenia
 
-  const c    = PORTAL_COLORS[cl.listings[0].portal] || '#888';
-  const multi = cl.listings.length > 1;
+  // Otwórz mapę jeśli zamknięta
+  if (!mapVisible) toggleMap();
 
-  if (entering) {
-    mk.setIcon(makeIcon(multi ? '#555' : c, 16));
-    mk.openPopup();
-  } else {
-    mk.setIcon(makeIcon(multi ? '#555' : c, multi ? 13 : 10));
+  // Przewiń do mapy — najpierw mapa musi być widoczna
+  const mapWrap = document.getElementById('map-wrap');
+  setTimeout(() => mapWrap.scrollIntoView({ behavior: 'smooth', block: 'start' }), 50);
+
+  // Spróbuj znaleźć marker — może jeszcze geocodować, więc retry przez ~5s
+  function tryOpen(attempts) {
+    const mk = markerById[id];
+    if (mk) {
+      mapObj.panTo(mk.getLatLng(), { animate: true });
+      setTimeout(() => mk.openPopup(), 300);
+      return;
+    }
+    if (attempts > 0) setTimeout(() => tryOpen(attempts - 1), 600);
   }
+  // Małe opóźnienie żeby mapa zdążyła się zainicjować jeśli była zamknięta
+  setTimeout(() => tryOpen(8), mapObj ? 0 : 350);
 }
 </script>
 </body>

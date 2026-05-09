@@ -129,8 +129,12 @@ def build_query(f, sort_col, sort_dir, limit, offset):
 
     # DATA — round-robin po portalu: sortujemy wg numeru wiersza wewnątrz każdego
     # portalu, dzięki czemu otodom/gratka/nro przeplatają się zamiast grupować.
+    # score LATERAL is in the outer SELECT so it can reference ph from base_from.
     sql_data = f"""
-        SELECT sub.*
+        SELECT sub.*,
+               score.tanszych,
+               score.lacznie_blizniatow,
+               ROUND(100.0 * score.tanszych / NULLIF(score.lacznie_blizniatow, 0)) AS pct_tanszych
         FROM (
             SELECT a.*, ph.cena_pln, ph.cena_za_m2,
                    ROW_NUMBER() OVER (
@@ -139,6 +143,23 @@ def build_query(f, sort_col, sort_dir, limit, offset):
                    ) AS _rn
             {base_from}
         ) sub
+        LEFT JOIN LATERAL (
+            SELECT
+                COUNT(*) FILTER (WHERE ph2.cena_za_m2 < sub.cena_za_m2) AS tanszych,
+                COUNT(*) AS lacznie_blizniatow
+            FROM auctions a2
+            LEFT JOIN LATERAL (
+                SELECT cena_za_m2 FROM price_history
+                WHERE auction_id = a2.auction_id
+                ORDER BY timestamp DESC LIMIT 1
+            ) ph2 ON true
+            WHERE a2.status = 'active'
+              AND a2.dzielnica = sub.dzielnica
+              AND a2.pokoje = sub.pokoje
+              AND a2.metraz BETWEEN sub.metraz * 0.8 AND sub.metraz * 1.2
+              AND ph2.cena_za_m2 IS NOT NULL
+              AND a2.auction_id != sub.auction_id
+        ) score ON true
         ORDER BY sub._rn ASC, sub.portal ASC
         LIMIT %s OFFSET %s
     """
@@ -200,13 +221,14 @@ def analiza():
         conn = get_db()
         cur  = conn.cursor()
 
-        # Średnia cena za m² per dzielnica
+        # a) Enhanced district stats with median
         cur.execute("""
             SELECT a.dzielnica,
                    COUNT(*) as liczba,
-                   ROUND(AVG(ph.cena_pln)) as avg_cena,
+                   ROUND(PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY ph.cena_za_m2)) as mediana_m2,
                    ROUND(AVG(ph.cena_za_m2)) as avg_m2,
-                   ROUND(AVG(a.metraz), 1) as avg_metraz
+                   ROUND(AVG(a.metraz), 1) as avg_metraz,
+                   ROUND(AVG(EXTRACT(EPOCH FROM (NOW() - a.first_seen))/86400)) as avg_dni_na_rynku
             FROM auctions a
             LEFT JOIN LATERAL (
                 SELECT cena_pln, cena_za_m2 FROM price_history
@@ -215,15 +237,77 @@ def analiza():
             ) ph ON true
             WHERE a.status = 'active'
               AND a.dzielnica IS NOT NULL AND a.dzielnica != ''
-              AND ph.cena_pln IS NOT NULL AND ph.cena_za_m2 IS NOT NULL
+              AND ph.cena_za_m2 IS NOT NULL
             GROUP BY a.dzielnica
             HAVING COUNT(*) >= 3
-            ORDER BY avg_m2 DESC NULLS LAST
+            ORDER BY mediana_m2 DESC NULLS LAST
             LIMIT 20
         """)
         dzielnice = cur.fetchall()
 
-        # Per portal
+        # b) Price brackets
+        cur.execute("""
+            SELECT
+                CASE
+                    WHEN ph.cena_pln < 400000  THEN 'do 400 tys.'
+                    WHEN ph.cena_pln < 600000  THEN '400–600 tys.'
+                    WHEN ph.cena_pln < 800000  THEN '600–800 tys.'
+                    WHEN ph.cena_pln < 1000000 THEN '800 tys.–1 mln'
+                    WHEN ph.cena_pln < 1500000 THEN '1–1,5 mln'
+                    ELSE 'powyżej 1,5 mln'
+                END as przedzial,
+                COUNT(*) as liczba
+            FROM auctions a
+            LEFT JOIN LATERAL (
+                SELECT cena_pln FROM price_history
+                WHERE auction_id = a.auction_id
+                ORDER BY timestamp DESC LIMIT 1
+            ) ph ON true
+            WHERE a.status = 'active' AND ph.cena_pln IS NOT NULL
+            GROUP BY przedzial
+            ORDER BY MIN(ph.cena_pln)
+        """)
+        rozklad = cur.fetchall()
+
+        # c) Best value listings — cheapest vs similar twins
+        cur.execute("""
+            SELECT a.auction_id, a.url, a.portal, a.tytul, a.metraz, a.pokoje, a.dzielnica,
+                   a.adres_pelny, a.zdjecie_url, a.rynek, a.rok_budowy,
+                   ph.cena_pln, ph.cena_za_m2,
+                   score.tanszych, score.lacznie_blizniatow,
+                   ROUND(100.0 * score.tanszych / NULLIF(score.lacznie_blizniatow, 0)) as pct_tanszych
+            FROM auctions a
+            LEFT JOIN LATERAL (
+                SELECT cena_pln, cena_za_m2 FROM price_history
+                WHERE auction_id = a.auction_id
+                ORDER BY timestamp DESC LIMIT 1
+            ) ph ON true
+            LEFT JOIN LATERAL (
+                SELECT
+                    COUNT(*) FILTER (WHERE ph2.cena_za_m2 < ph.cena_za_m2) AS tanszych,
+                    COUNT(*) AS lacznie_blizniatow
+                FROM auctions a2
+                LEFT JOIN LATERAL (
+                    SELECT cena_za_m2 FROM price_history
+                    WHERE auction_id = a2.auction_id
+                    ORDER BY timestamp DESC LIMIT 1
+                ) ph2 ON true
+                WHERE a2.status = 'active'
+                  AND a2.dzielnica = a.dzielnica
+                  AND a2.pokoje = a.pokoje
+                  AND a2.metraz BETWEEN a.metraz * 0.8 AND a.metraz * 1.2
+                  AND ph2.cena_za_m2 IS NOT NULL
+                  AND a2.auction_id != a.auction_id
+            ) score ON true
+            WHERE a.status = 'active'
+              AND ph.cena_za_m2 IS NOT NULL
+              AND score.lacznie_blizniatow >= 3
+            ORDER BY pct_tanszych DESC NULLS LAST
+            LIMIT 20
+        """)
+        best_value = cur.fetchall()
+
+        # d) Per portal stats (unchanged)
         cur.execute("""
             SELECT a.portal,
                    COUNT(*) as liczba,
@@ -241,37 +325,17 @@ def analiza():
         """)
         portale = cur.fetchall()
 
-        # Rozkład cen
-        cur.execute("""
-            SELECT
-                CASE
-                    WHEN ph.cena_pln < 400000  THEN 'do 400 tys.'
-                    WHEN ph.cena_pln < 600000  THEN '400–600 tys.'
-                    WHEN ph.cena_pln < 800000  THEN '600–800 tys.'
-                    WHEN ph.cena_pln < 1000000 THEN '800 tys.–1 mln'
-                    WHEN ph.cena_pln < 1500000 THEN '1–1,5 mln'
-                    ELSE 'powyżej 1,5 mln'
-                END as przedział,
-                COUNT(*) as liczba
-            FROM auctions a
-            LEFT JOIN LATERAL (
-                SELECT cena_pln FROM price_history
-                WHERE auction_id = a.auction_id
-                ORDER BY timestamp DESC LIMIT 1
-            ) ph ON true
-            WHERE a.status = 'active' AND ph.cena_pln IS NOT NULL
-            GROUP BY przedział
-            ORDER BY MIN(ph.cena_pln)
-        """)
-        rozklad = cur.fetchall()
-
         conn.close()
     except Exception as e:
         import traceback; traceback.print_exc()
-        dzielnice, portale, rozklad = [], [], []
+        dzielnice, portale, rozklad, best_value = [], [], [], []
 
     return render_template("analiza.html",
-        dzielnice=dzielnice, portale=portale, rozklad=rozklad)
+        dzielnice=to_json_safe(dzielnice),
+        portale=to_json_safe(portale),
+        rozklad=to_json_safe(rozklad),
+        best_value=to_json_safe(best_value),
+    )
 
 
 @app.route("/api/markers")

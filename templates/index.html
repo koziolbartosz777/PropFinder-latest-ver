@@ -235,6 +235,10 @@
     .btn-show-map:hover { border-color: #059669; color: #059669; background: #F0FDF4; }
     .btn-show-map svg { flex-shrink: 0; }
 
+    /* ATTRACTIVENESS BADGES */
+    .badge-good { display:inline-block; padding:2px 8px; border-radius:4px; font-size:10px; font-weight:700; background:#D1FAE5; color:#065F46; }
+    .badge-bad  { display:inline-block; padding:2px 8px; border-radius:4px; font-size:10px; font-weight:700; background:#FEF3C7; color:#92400E; }
+
     /* EMPTY */
     .empty { text-align: center; padding: 60px 20px; color: var(--muted); grid-column: 1/-1; }
     .empty h3 { font-size: 16px; color: var(--mid); margin-bottom: 8px; }
@@ -442,6 +446,14 @@
           <div>
             <div class="card-price">{% if m.cena_pln %}{{ "{:,.0f}".format(m.cena_pln).replace(",", " ") }} zł{% else %}Cena do uzgodnienia{% endif %}</div>
             {% if m.cena_za_m2 %}<div class="card-price-m2">{{ "{:,.0f}".format(m.cena_za_m2).replace(",", " ") }} zł/m²</div>{% endif %}
+            {% if m.lacznie_blizniatow and m.lacznie_blizniatow >= 3 and m.pct_tanszych is not none %}
+              {% set pct = m.pct_tanszych | int %}
+              {% if pct >= 70 %}
+                <span class="badge-good" style="margin-top:4px">Tańsza niż {{ pct }}% podobnych</span>
+              {% elif pct <= 30 %}
+                <span class="badge-bad" style="margin-top:4px">Droższa niż {{ 100 - pct }}% podobnych</span>
+              {% endif %}
+            {% endif %}
           </div>
           <div class="card-title">{{ m.tytul or "Brak tytułu" }}</div>
           <div class="card-chips">
@@ -480,6 +492,14 @@
             <div class="lcard-pricing">
               <div class="lcard-price">{% if m.cena_pln %}{{ "{:,.0f}".format(m.cena_pln).replace(",", " ") }} zł{% else %}Cena do uzgodnienia{% endif %}</div>
               {% if m.cena_za_m2 %}<div class="lcard-price-m2">{{ "{:,.0f}".format(m.cena_za_m2).replace(",", " ") }} zł/m²</div>{% endif %}
+              {% if m.lacznie_blizniatow and m.lacznie_blizniatow >= 3 and m.pct_tanszych is not none %}
+                {% set pct = m.pct_tanszych | int %}
+                {% if pct >= 70 %}
+                  <span class="badge-good" style="margin-top:4px">Tańsza niż {{ pct }}% podobnych</span>
+                {% elif pct <= 30 %}
+                  <span class="badge-bad" style="margin-top:4px">Droższa niż {{ 100 - pct }}% podobnych</span>
+                {% endif %}
+              {% endif %}
             </div>
             <span class="lcard-portal-badge tag-{{ m.portal }}">{{ m.portal }}</span>
           </div>

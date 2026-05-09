@@ -1,0 +1,470 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>PropAgent — Analiza rynku</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg:       #F7F7F5;
+      --white:    #FFFFFF;
+      --accent:   #C0392B;
+      --dark:     #111111;
+      --mid:      #444444;
+      --muted:    #888888;
+      --border:   #E5E5E3;
+      --hover:    #F0F0EE;
+      --radius:   10px;
+      --shadow:   0 1px 4px rgba(0,0,0,.07), 0 2px 12px rgba(0,0,0,.05);
+      --shadow-hover: 0 4px 20px rgba(0,0,0,.12);
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Inter', sans-serif; background: var(--bg); color: var(--dark); font-size: 14px; }
+    a { text-decoration: none; color: inherit; }
+
+    /* ── HEADER ─────────────────────────────────────────────────────────────── */
+    header {
+      position: sticky; top: 0; z-index: 200;
+      background: var(--white); border-bottom: 1px solid var(--border);
+      height: 58px; display: flex; align-items: center;
+      padding: 0 24px; gap: 16px;
+    }
+    .logo { font-size: 17px; font-weight: 700; white-space: nowrap; letter-spacing: -.3px; }
+    .logo-prop  { color: var(--accent); }
+    .logo-agent { color: var(--dark); }
+    .nav-link {
+      font-size: 13px; font-weight: 500; color: var(--muted);
+      padding: 5px 10px; border-radius: 6px; transition: all .12s;
+    }
+    .nav-link:hover, .nav-link.active { background: var(--hover); color: var(--dark); }
+
+    /* ── MAIN CONTENT ───────────────────────────────────────────────────────── */
+    .page-wrap {
+      max-width: 1200px; margin: 0 auto; padding: 32px 24px 60px;
+    }
+
+    /* ── SECTION ────────────────────────────────────────────────────────────── */
+    .section { margin-bottom: 48px; }
+    .section-header { margin-bottom: 18px; }
+    .section-title {
+      font-size: 20px; font-weight: 700; color: var(--dark);
+      letter-spacing: -.3px; margin-bottom: 4px;
+    }
+    .section-sub {
+      font-size: 12.5px; color: var(--muted); line-height: 1.5;
+    }
+
+    /* ── TABLE ──────────────────────────────────────────────────────────────── */
+    .tbl-wrap {
+      background: var(--white); border-radius: var(--radius);
+      border: 1px solid var(--border); box-shadow: var(--shadow);
+      overflow: hidden;
+    }
+    table { width: 100%; border-collapse: collapse; }
+    thead th {
+      padding: 11px 14px; font-size: 11px; font-weight: 700;
+      letter-spacing: .06em; text-transform: uppercase;
+      color: var(--muted); background: var(--bg);
+      border-bottom: 1px solid var(--border); text-align: left;
+    }
+    thead th:not(:first-child) { text-align: right; }
+    tbody tr { border-bottom: 1px solid var(--border); transition: background .1s; }
+    tbody tr:last-child { border-bottom: none; }
+    tbody tr:hover { background: var(--hover); }
+    tbody td { padding: 11px 14px; font-size: 13px; }
+    tbody td:not(:first-child) { text-align: right; }
+    .rank-num {
+      display: inline-flex; align-items: center; justify-content: center;
+      width: 22px; height: 22px; border-radius: 50%;
+      background: var(--bg); border: 1px solid var(--border);
+      font-size: 11px; font-weight: 700; color: var(--muted);
+      margin-right: 8px; flex-shrink: 0;
+    }
+    .dzielnica-name { font-weight: 600; color: var(--dark); }
+    .m2-cell {
+      font-weight: 700; font-size: 14px;
+      padding: 4px 10px; border-radius: 6px; display: inline-block;
+    }
+    .meta-num { color: var(--mid); }
+    .muted-num { color: var(--muted); font-size: 12px; }
+
+    /* ── PRICE BRACKETS ─────────────────────────────────────────────────────── */
+    .bracket-list { display: flex; flex-direction: column; gap: 10px; }
+    .bracket-row { display: flex; align-items: center; gap: 12px; }
+    .bracket-label {
+      min-width: 140px; font-size: 13px; font-weight: 500;
+      color: var(--mid); flex-shrink: 0;
+    }
+    .bracket-bar-wrap {
+      flex: 1; background: var(--border); border-radius: 4px; height: 28px;
+      overflow: hidden;
+    }
+    .bracket-bar {
+      height: 100%; border-radius: 4px;
+      background: linear-gradient(90deg, #C0392B 0%, #E74C3C 100%);
+      display: flex; align-items: center; padding: 0 10px;
+      transition: width .6s ease; min-width: 40px;
+    }
+    .bracket-count {
+      font-size: 12px; font-weight: 700; color: white; white-space: nowrap;
+    }
+    .bracket-total {
+      min-width: 46px; font-size: 13px; font-weight: 600;
+      color: var(--dark); text-align: right; flex-shrink: 0;
+    }
+
+    /* ── BEST VALUE CARDS ───────────────────────────────────────────────────── */
+    .bv-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+      gap: 16px;
+    }
+    .bv-card {
+      background: var(--white); border-radius: var(--radius);
+      border: 1px solid var(--border); box-shadow: var(--shadow);
+      overflow: hidden; cursor: pointer;
+      transition: box-shadow .2s, transform .2s, border-color .2s;
+      display: flex; flex-direction: column;
+    }
+    .bv-card:hover {
+      box-shadow: var(--shadow-hover); transform: translateY(-2px);
+      border-color: #059669;
+    }
+    .bv-img {
+      width: 100%; height: 160px; object-fit: cover; display: block;
+      background: var(--border);
+    }
+    .bv-img-ph {
+      width: 100%; height: 160px; display: flex; align-items: center;
+      justify-content: center;
+      background: linear-gradient(135deg, #f0ede8, #e8e4dc);
+      font-size: 2.5rem; color: var(--border);
+    }
+    .bv-body { padding: 14px; flex: 1; display: flex; flex-direction: column; gap: 8px; }
+    .bv-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 8px; }
+    .bv-badge {
+      display: inline-flex; align-items: center; gap: 4px;
+      padding: 5px 10px; border-radius: 20px;
+      background: #D1FAE5; color: #065F46;
+      font-size: 11.5px; font-weight: 700; white-space: nowrap; flex-shrink: 0;
+    }
+    .bv-badge svg { flex-shrink: 0; }
+    .bv-price { font-size: 18px; font-weight: 700; line-height: 1.1; }
+    .bv-price-m2 { font-size: 11.5px; color: var(--muted); margin-top: 1px; }
+    .bv-title {
+      font-size: 12.5px; color: var(--mid); line-height: 1.45;
+      display: -webkit-box; -webkit-line-clamp: 2; line-clamp: 2;
+      -webkit-box-orient: vertical; overflow: hidden;
+    }
+    .bv-chips { display: flex; flex-wrap: wrap; gap: 4px; }
+    .chip {
+      padding: 2px 7px; border-radius: 5px;
+      background: var(--bg); border: 1px solid var(--border);
+      font-size: 11px; color: var(--mid); font-weight: 500;
+    }
+    .bv-addr {
+      font-size: 11px; color: var(--muted);
+      display: flex; align-items: center; gap: 3px;
+      overflow: hidden; white-space: nowrap; text-overflow: ellipsis;
+    }
+    .portal-tag {
+      display: inline-block; padding: 2px 7px; border-radius: 4px;
+      font-size: 10px; font-weight: 700; letter-spacing: .05em;
+      text-transform: uppercase; color: white;
+    }
+    .tag-otodom { background: #C0392B; }
+    .tag-gratka { background: #1D4ED8; }
+    .tag-nro    { background: #047857; }
+
+    /* ── PORTAL STAT CARDS ──────────────────────────────────────────────────── */
+    .portal-cards { display: flex; gap: 16px; flex-wrap: wrap; }
+    .portal-card {
+      flex: 1; min-width: 180px;
+      background: var(--white); border-radius: var(--radius);
+      border: 1px solid var(--border); box-shadow: var(--shadow);
+      padding: 20px 22px;
+    }
+    .portal-card-name {
+      font-size: 11px; font-weight: 700; letter-spacing: .08em;
+      text-transform: uppercase; margin-bottom: 12px;
+    }
+    .name-otodom { color: #C0392B; }
+    .name-gratka { color: #1D4ED8; }
+    .name-nro    { color: #047857; }
+    .portal-stat { margin-bottom: 8px; }
+    .portal-stat-val {
+      font-size: 22px; font-weight: 700; color: var(--dark);
+      line-height: 1.1;
+    }
+    .portal-stat-lbl { font-size: 11px; color: var(--muted); margin-top: 1px; }
+
+    /* ── METHODOLOGY NOTE ───────────────────────────────────────────────────── */
+    .method-note {
+      background: #F0FDF4; border: 1px solid #A7F3D0;
+      border-radius: var(--radius); padding: 14px 18px;
+      font-size: 12.5px; color: #065F46; line-height: 1.6;
+      margin-bottom: 20px;
+    }
+    .method-note strong { font-weight: 700; }
+
+    /* ── EMPTY ──────────────────────────────────────────────────────────────── */
+    .empty-state {
+      padding: 48px; text-align: center;
+      background: var(--white); border-radius: var(--radius);
+      border: 1px solid var(--border); color: var(--muted);
+    }
+    .empty-state h3 { font-size: 15px; color: var(--mid); margin-bottom: 6px; }
+  </style>
+</head>
+<body>
+
+<!-- HEADER -->
+<header>
+  <a href="/" class="logo"><span class="logo-prop">Prop</span><span class="logo-agent">Agent</span></a>
+  <a href="/" class="nav-link">Oferty</a>
+  <a href="/analiza" class="nav-link active">Analiza rynku</a>
+</header>
+
+<div class="page-wrap">
+
+  <!-- ══════════════════════════════════════════════════════════════════════════
+       SECTION 1 — Ranking dzielnic
+  ══════════════════════════════════════════════════════════════════════════ -->
+  <section class="section">
+    <div class="section-header">
+      <div class="section-title">Ranking dzielnic</div>
+      <div class="section-sub">
+        Posortowane według mediany ceny za m².
+        <strong>Mediana jest odporniejsza na luksusowe outlier'y niż średnia</strong>
+        — kilka penthouse'ów nie zaburzy oceny typowego mieszkania w dzielnicy.
+        Minimalna liczba ofert w dzielnicy: 3.
+      </div>
+    </div>
+
+    {% if dzielnice %}
+    <div class="tbl-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Dzielnica</th>
+            <th>Oferty</th>
+            <th>Mediana zł/m²</th>
+            <th>Średnia zł/m²</th>
+            <th>Śr. metraż</th>
+            <th>Śr. dni na rynku</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% set max_m2 = dzielnice | map(attribute='mediana_m2') | select | max %}
+          {% set min_m2 = dzielnice | map(attribute='mediana_m2') | select | min %}
+          {% for d in dzielnice %}
+          {% set pct = ((d.mediana_m2 - min_m2) / ((max_m2 - min_m2) or 1) * 100) | int %}
+          {# colour: green (cheap) → red (expensive) via HSL interpolation #}
+          {% set hue = (120 - pct * 1.2) | int %}
+          <tr>
+            <td>
+              <span class="rank-num">{{ loop.index }}</span>
+              <span class="dzielnica-name">{{ d.dzielnica }}</span>
+            </td>
+            <td><span class="meta-num">{{ d.liczba }}</span></td>
+            <td>
+              <span class="m2-cell"
+                    style="background:hsl({{ hue }},55%,90%);color:hsl({{ hue }},60%,28%)">
+                {{ "{:,.0f}".format(d.mediana_m2).replace(",", " ") }} zł
+              </span>
+            </td>
+            <td><span class="muted-num">{{ "{:,.0f}".format(d.avg_m2).replace(",", " ") }} zł</span></td>
+            <td><span class="meta-num">{{ d.avg_metraz }} m²</span></td>
+            <td>
+              {% if d.avg_dni_na_rynku is not none %}
+                <span class="meta-num">{{ d.avg_dni_na_rynku | int }} dni</span>
+              {% else %}
+                <span class="muted-num">—</span>
+              {% endif %}
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <div class="empty-state">
+      <h3>Brak danych</h3>
+      <p>Uruchom scrapy, żeby zebrać oferty.</p>
+    </div>
+    {% endif %}
+  </section>
+
+
+  <!-- ══════════════════════════════════════════════════════════════════════════
+       SECTION 2 — Rozkład cen
+  ══════════════════════════════════════════════════════════════════════════ -->
+  <section class="section">
+    <div class="section-header">
+      <div class="section-title">Rozkład cen</div>
+      <div class="section-sub">Ile aktywnych ofert mieści się w każdym przedziale cenowym.</div>
+    </div>
+
+    {% if rozklad %}
+    <div class="tbl-wrap" style="padding: 20px 24px;">
+      {% set max_count = rozklad | map(attribute='liczba') | max %}
+      <div class="bracket-list">
+        {% for r in rozklad %}
+        <div class="bracket-row">
+          <div class="bracket-label">{{ r.przedzial }}</div>
+          <div class="bracket-bar-wrap">
+            <div class="bracket-bar"
+                 style="width: {{ ((r.liczba / max_count) * 100) | int }}%">
+              <span class="bracket-count">{{ r.liczba }}</span>
+            </div>
+          </div>
+          <div class="bracket-total">{{ r.liczba }}</div>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+    {% else %}
+    <div class="empty-state">
+      <h3>Brak danych</h3>
+      <p>Uruchom scrapy, żeby zebrać oferty.</p>
+    </div>
+    {% endif %}
+  </section>
+
+
+  <!-- ══════════════════════════════════════════════════════════════════════════
+       SECTION 3 — Najlepsze oferty vs. podobne
+  ══════════════════════════════════════════════════════════════════════════ -->
+  <section class="section">
+    <div class="section-header">
+      <div class="section-title">Najlepsze oferty vs. podobne</div>
+    </div>
+
+    <div class="method-note">
+      <strong>Jak to działa?</strong> Porównujemy każdą ofertę do ofert z tej samej dzielnicy,
+      tej samej liczby pokoi i metrażu ±20%.
+      Wynik "Tańsza niż X% podobnych" oznacza, że X% ofert w tej grupie ma wyższą cenę za m².
+      <strong>Mediana jest odporna na outlier'y</strong> — penthouse'y nie zaburzają oceny kawalerek.
+      Pokazujemy tylko oferty, gdzie &ge;60% podobnych jest droższych i jest co najmniej 3 obiekty porównawcze.
+    </div>
+
+    {% set shown = best_value | selectattr('pct_tanszych', 'ge', 60) | list %}
+    {% if shown %}
+    <div class="bv-grid">
+      {% for m in shown %}
+      <div class="bv-card" onclick="window.open('{{ m.url }}', '_blank')">
+        {% if m.zdjecie_url %}
+          <img class="bv-img" src="{{ m.zdjecie_url }}" alt="{{ m.tytul }}" loading="lazy"
+               onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">
+          <div class="bv-img-ph" style="display:none">&#127968;</div>
+        {% else %}
+          <div class="bv-img-ph">&#127968;</div>
+        {% endif %}
+
+        <div class="bv-body">
+          <div class="bv-top">
+            <div>
+              <div class="bv-price">
+                {% if m.cena_pln %}{{ "{:,.0f}".format(m.cena_pln).replace(",", " ") }} zł{% else %}—{% endif %}
+              </div>
+              {% if m.cena_za_m2 %}
+              <div class="bv-price-m2">{{ "{:,.0f}".format(m.cena_za_m2).replace(",", " ") }} zł/m²</div>
+              {% endif %}
+            </div>
+            <div class="bv-badge">
+              <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+                <polyline points="20 6 9 17 4 12"/>
+              </svg>
+              Tańsza niż {{ m.pct_tanszych | int }}% podobnych
+            </div>
+          </div>
+
+          <div class="bv-title">{{ m.tytul or "Brak tytułu" }}</div>
+
+          <div class="bv-chips">
+            {% if m.metraz %}<span class="chip">{{ "%.0f"|format(m.metraz) }} m²</span>{% endif %}
+            {% if m.pokoje %}<span class="chip">{{ m.pokoje }} pok.</span>{% endif %}
+            {% if m.rok_budowy %}<span class="chip">{{ m.rok_budowy }}</span>{% endif %}
+            {% if m.rynek %}
+              <span class="chip" style="{% if m.rynek == 'pierwotny' %}background:#D1FAE5;color:#065F46;{% else %}background:#FEF3C7;color:#92400E;{% endif %}">
+                {{ m.rynek }}
+              </span>
+            {% endif %}
+            <span class="portal-tag tag-{{ m.portal }}">{{ m.portal }}</span>
+          </div>
+
+          {% if m.adres_pelny or m.dzielnica %}
+          <div class="bv-addr">
+            <svg width="10" height="10" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+              <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z"/>
+            </svg>
+            {{ m.adres_pelny or m.dzielnica }}
+          </div>
+          {% endif %}
+
+          <div style="font-size:11px;color:var(--muted);margin-top:2px">
+            Porównano z {{ m.lacznie_blizniatow }} podobnymi ofertami
+          </div>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+    {% else %}
+    <div class="empty-state">
+      <h3>Brak wyróżnionych ofert</h3>
+      <p>Pojawią się tutaj, gdy będzie wystarczająco dużo ofert do porównania (min. 3 podobne).</p>
+    </div>
+    {% endif %}
+  </section>
+
+
+  <!-- ══════════════════════════════════════════════════════════════════════════
+       SECTION 4 — Per portal
+  ══════════════════════════════════════════════════════════════════════════ -->
+  <section class="section">
+    <div class="section-header">
+      <div class="section-title">Statystyki per portal</div>
+      <div class="section-sub">Aktywne oferty i średnie ceny z każdego portalu.</div>
+    </div>
+
+    {% if portale %}
+    <div class="portal-cards">
+      {% for p in portale %}
+      <div class="portal-card">
+        <div class="portal-card-name name-{{ p.portal }}">{{ p.portal }}</div>
+        <div class="portal-stat">
+          <div class="portal-stat-val">{{ "{:,}".format(p.liczba).replace(",", " ") }}</div>
+          <div class="portal-stat-lbl">aktywnych ofert</div>
+        </div>
+        {% if p.avg_m2 %}
+        <div class="portal-stat">
+          <div class="portal-stat-val" style="font-size:17px">
+            {{ "{:,.0f}".format(p.avg_m2).replace(",", " ") }} zł/m²
+          </div>
+          <div class="portal-stat-lbl">średnia cena za m²</div>
+        </div>
+        {% endif %}
+        {% if p.avg_cena %}
+        <div class="portal-stat">
+          <div class="portal-stat-val" style="font-size:15px;color:var(--mid)">
+            {{ "{:,.0f}".format(p.avg_cena).replace(",", " ") }} zł
+          </div>
+          <div class="portal-stat-lbl">średnia cena</div>
+        </div>
+        {% endif %}
+      </div>
+      {% endfor %}
+    </div>
+    {% else %}
+    <div class="empty-state">
+      <h3>Brak danych</h3>
+      <p>Uruchom scrapy, żeby zebrać oferty.</p>
+    </div>
+    {% endif %}
+  </section>
+
+</div><!-- /.page-wrap -->
+</body>
+</html>

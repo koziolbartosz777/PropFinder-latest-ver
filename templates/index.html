@@ -196,18 +196,23 @@
     .lcard {
       background: var(--white); border-radius: var(--radius); border: 1px solid var(--border);
       box-shadow: var(--shadow); display: none; overflow: hidden; cursor: pointer;
-      transition: box-shadow .18s; height: 150px;
+      transition: box-shadow .18s, border-color .18s; min-height: 180px;
     }
     .lcard:hover { box-shadow: var(--shadow-hover); }
-    .lcard-img { width: 190px; flex-shrink: 0; position: relative; overflow: hidden; }
+    .lcard.map-highlight { border-color: var(--accent); box-shadow: 0 0 0 2px rgba(192,57,43,.25), var(--shadow-hover); }
+    .lcard-img { width: 260px; flex-shrink: 0; position: relative; overflow: hidden; }
     .lcard-img img { width: 100%; height: 100%; object-fit: cover; display: block; }
-    .lcard-img-ph { width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; background: linear-gradient(135deg, #f0ede8, #e8e4dc); color: var(--border); font-size: 2rem; }
-    .lcard-body { flex: 1; padding: 12px 14px; display: flex; flex-direction: column; gap: 5px; overflow: hidden; }
-    .lcard-price { font-size: 17px; font-weight: 700; }
-    .lcard-price-m2 { font-size: 11.5px; color: var(--muted); }
-    .lcard-title { font-size: 13px; font-weight: 500; color: var(--dark); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-    .lcard-chips { display: flex; flex-wrap: wrap; gap: 3px; }
-    .lcard-addr { font-size: 11.5px; color: var(--muted); margin-top: auto; }
+    .lcard-img-ph { width: 100%; height: 100%; min-height: 180px; display: flex; align-items: center; justify-content: center; background: linear-gradient(135deg, #f0ede8, #e8e4dc); color: var(--border); font-size: 2rem; }
+    .lcard-body { flex: 1; padding: 14px 18px; display: flex; flex-direction: column; gap: 6px; overflow: hidden; min-width: 0; }
+    .lcard-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
+    .lcard-pricing {}
+    .lcard-price { font-size: 19px; font-weight: 700; line-height: 1.1; }
+    .lcard-price-m2 { font-size: 12px; color: var(--muted); margin-top: 2px; }
+    .lcard-portal-badge { padding: 3px 9px; border-radius: 5px; font-size: 10px; font-weight: 700; letter-spacing: .05em; text-transform: uppercase; color: white; flex-shrink: 0; align-self: flex-start; }
+    .lcard-title { font-size: 13.5px; font-weight: 500; color: var(--dark); overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; line-height: 1.45; }
+    .lcard-chips { display: flex; flex-wrap: wrap; gap: 4px; }
+    .lcard-addr { font-size: 12px; color: var(--muted); margin-top: auto; display: flex; align-items: center; gap: 4px; }
+    .lcard-rynek { display: inline-flex; padding: 2px 7px; border-radius: 4px; font-size: 10px; font-weight: 700; text-transform: uppercase; align-self: flex-start; }
 
     /* EMPTY */
     .empty { text-align: center; padding: 60px 20px; color: var(--muted); grid-column: 1/-1; }
@@ -397,7 +402,10 @@
       {% for m in mieszkania %}
 
       <!-- KARTA GRID -->
-      <div class="card" onclick="window.open('{{ m.url }}','_blank')">
+      <div class="card" onclick="window.open('{{ m.url }}','_blank')"
+           data-id="{{ m.auction_id }}"
+           onmouseenter="cardHover('{{ m.auction_id }}', true)"
+           onmouseleave="cardHover('{{ m.auction_id }}', false)">
         <div class="card-img-wrap">
           {% if m.zdjecie_url %}
             <img class="card-img" src="{{ m.zdjecie_url }}" alt="{{ m.tytul }}" loading="lazy"
@@ -433,7 +441,10 @@
       </div>
 
       <!-- KARTA LIST -->
-      <div class="lcard" onclick="window.open('{{ m.url }}','_blank')">
+      <div class="lcard" onclick="window.open('{{ m.url }}','_blank')"
+           data-id="{{ m.auction_id }}"
+           onmouseenter="cardHover('{{ m.auction_id }}', true)"
+           onmouseleave="cardHover('{{ m.auction_id }}', false)">
         <div class="lcard-img">
           {% if m.zdjecie_url %}
             <img src="{{ m.zdjecie_url }}" alt="{{ m.tytul }}" loading="lazy"
@@ -442,22 +453,29 @@
           {% else %}
             <div class="lcard-img-ph">&#127968;</div>
           {% endif %}
-          <span class="portal-tag tag-{{ m.portal }}">{{ m.portal }}</span>
-          {% if m.rynek %}
-          <span class="rynek-tag {{ 'rynek-pierwotny' if m.rynek == 'pierwotny' else 'rynek-wtorny' }}">{{ m.rynek }}</span>
-          {% endif %}
         </div>
         <div class="lcard-body">
-          <div class="lcard-price">{% if m.cena_pln %}{{ "{:,.0f}".format(m.cena_pln).replace(",", " ") }} zł{% else %}—{% endif %}</div>
-          {% if m.cena_za_m2 %}<div class="lcard-price-m2">{{ "{:,.0f}".format(m.cena_za_m2).replace(",", " ") }} zł/m²</div>{% endif %}
+          <div class="lcard-top">
+            <div class="lcard-pricing">
+              <div class="lcard-price">{% if m.cena_pln %}{{ "{:,.0f}".format(m.cena_pln).replace(",", " ") }} zł{% else %}Cena do uzgodnienia{% endif %}</div>
+              {% if m.cena_za_m2 %}<div class="lcard-price-m2">{{ "{:,.0f}".format(m.cena_za_m2).replace(",", " ") }} zł/m²</div>{% endif %}
+            </div>
+            <span class="lcard-portal-badge tag-{{ m.portal }}">{{ m.portal }}</span>
+          </div>
           <div class="lcard-title">{{ m.tytul or "Brak tytułu" }}</div>
           <div class="lcard-chips">
             {% if m.metraz %}<span class="chip">{{ "%.0f"|format(m.metraz) }} m²</span>{% endif %}
             {% if m.pokoje %}<span class="chip">{{ m.pokoje }} pok.</span>{% endif %}
             {% if m.pietro %}<span class="chip">p. {{ m.pietro }}</span>{% endif %}
             {% if m.rok_budowy %}<span class="chip">{{ m.rok_budowy }}</span>{% endif %}
+            {% if m.rynek %}<span class="chip lcard-rynek {{ 'rynek-pierwotny' if m.rynek == 'pierwotny' else 'rynek-wtorny' }}">{{ m.rynek }}</span>{% endif %}
           </div>
-          {% if m.adres_pelny %}<div class="lcard-addr">{{ m.adres_pelny }}</div>{% endif %}
+          {% if m.adres_pelny %}
+          <div class="lcard-addr">
+            <svg width="10" height="10" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z"/></svg>
+            {{ m.adres_pelny }}
+          </div>
+          {% endif %}
         </div>
       </div>
 
@@ -498,89 +516,205 @@
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
-// ── PORTAL ──
+// ── Dane bieżącej strony (serwer) ──────────────────────────────────────────
+const PAGE_LISTINGS = {{ mieszkania_json | safe }};
+
+// ── PORTAL ─────────────────────────────────────────────────────────────────
 function setPortal(v) {
   document.getElementById('portal-val').value = v;
   document.querySelectorAll('.portal-btn').forEach(b => {
     b.className = 'portal-btn';
-    const map = {'wszystkie':'wszystkie','otodom':'otodom','gratka':'gratka','nro':'nro'};
     const k = b.textContent.trim().toLowerCase();
-    const pid = k === 'wszystkie' ? 'wszystkie' : k === 'otodom' ? 'otodom' : k === 'gratka' ? 'gratka' : k === 'nro' ? 'nro' : '';
+    const pid = {'wszystkie':'wszystkie','otodom':'otodom','gratka':'gratka','nro':'nro'}[k] || '';
     if (pid === v) b.classList.add('on-' + v);
   });
 }
 
-// ── POKOJE — multi-select ──
+// ── POKOJE — multi-select ───────────────────────────────────────────────────
 let selRooms = new Set('{{ filtry.pokoje }}'.split(',').filter(x => x.trim()));
 function toggleRoom(v) {
-  if (selRooms.has(v)) selRooms.delete(v);
-  else selRooms.add(v);
+  selRooms.has(v) ? selRooms.delete(v) : selRooms.add(v);
   document.getElementById('room-val').value = [...selRooms].join(',');
   document.querySelectorAll('.room-btn').forEach(b => {
-    const bv = b.textContent.trim().replace('+', '');
-    b.classList.toggle('on', selRooms.has(bv));
+    b.classList.toggle('on', selRooms.has(b.textContent.trim().replace('+', '')));
   });
 }
 
-// ── WIDOK ──
+// ── WIDOK ──────────────────────────────────────────────────────────────────
 function setView(v) {
-  const cards  = document.querySelectorAll('.card');
-  const lcards = document.querySelectorAll('.lcard');
-  const wrap   = document.getElementById('cards');
+  const wrap = document.getElementById('cards');
   if (v === 'list') {
     wrap.className = 'list';
-    cards.forEach(c  => c.style.display = 'none');
-    lcards.forEach(c => c.style.display = 'flex');
+    document.querySelectorAll('.card') .forEach(c => c.style.display = 'none');
+    document.querySelectorAll('.lcard').forEach(c => c.style.display = 'flex');
     document.getElementById('vl').classList.add('on');
     document.getElementById('vg').classList.remove('on');
   } else {
     wrap.className = 'grid';
-    cards.forEach(c  => c.style.display = 'flex');
-    lcards.forEach(c => c.style.display = 'none');
+    document.querySelectorAll('.card') .forEach(c => c.style.display = 'flex');
+    document.querySelectorAll('.lcard').forEach(c => c.style.display = 'none');
     document.getElementById('vg').classList.add('on');
     document.getElementById('vl').classList.remove('on');
   }
 }
 
-// ── MAPA ──
-let mapObj = null, mapVisible = false;
+// ── MAPA ───────────────────────────────────────────────────────────────────
+const PORTAL_COLORS = { otodom: '#C0392B', gratka: '#1D4ED8', nro: '#047857' };
+
+let mapObj      = null;
+let mapVisible  = false;
+// auction_id → marker Leaflet
+const markerById = {};
+// "lat4,lng4" → { marker, listings: [] }
+const clusters   = {};
+
+// Cache geocodingu w localStorage (oszczędza Nominatim przy paginacji)
+function geoRead(addr) {
+  try { const v = localStorage.getItem('geo:' + addr); return v ? JSON.parse(v) : null; }
+  catch { return null; }
+}
+function geoWrite(addr, coords) {
+  try { localStorage.setItem('geo:' + addr, JSON.stringify(coords)); } catch {}
+}
+
+function makeIcon(color, size = 10, opacity = 1) {
+  return L.divIcon({
+    html: `<div style="
+      width:${size}px; height:${size}px; border-radius:50%;
+      background:${color}; border:2px solid white;
+      box-shadow:0 1px 5px rgba(0,0,0,.35);
+      opacity:${opacity};
+      transition: all .15s;
+    "></div>`,
+    className: '', iconSize: [size, size], iconAnchor: [size/2, size/2],
+  });
+}
+
+function buildPopup(listings) {
+  const multi = listings.length > 1;
+  const parts = listings.map(m => {
+    const c     = PORTAL_COLORS[m.portal] || '#888';
+    const cena  = m.cena_pln ? new Intl.NumberFormat('pl').format(m.cena_pln) + ' zł' : '—';
+    const meta  = [m.metraz ? Math.round(m.metraz) + ' m²' : null,
+                   m.pokoje ? m.pokoje + ' pok.' : null].filter(Boolean).join(' · ');
+    const img   = m.zdjecie_url
+      ? `<img src="${m.zdjecie_url}" style="width:100%;height:72px;object-fit:cover;border-radius:5px;margin-bottom:5px">`
+      : '';
+    return `<div style="border-top:${multi?'1px solid #eee':'none'};padding-top:${multi?'8px':'0'}">
+      ${img}
+      <strong style="font-size:13px">${cena}</strong>
+      <span style="margin-left:5px;font-size:9px;font-weight:700;text-transform:uppercase;
+        background:${c};color:#fff;padding:1px 5px;border-radius:3px">${m.portal}</span><br>
+      <span style="font-size:11px;color:#555">${meta}</span><br>
+      ${m.adres_pelny ? `<span style="font-size:10.5px;color:#888">${m.adres_pelny}</span><br>` : ''}
+      <a href="${m.url}" target="_blank"
+         style="font-size:11px;color:${c};font-weight:600">Otwórz ofertę →</a>
+    </div>`;
+  });
+
+  const header = multi
+    ? `<div style="font-size:11.5px;font-weight:700;color:#111;margin-bottom:6px">
+         ${listings.length} oferty w tym miejscu</div>` : '';
+
+  return `<div style="font-family:Inter,sans-serif;min-width:170px;max-width:220px;
+    max-height:320px;overflow-y:auto">${header}${parts.join('')}</div>`;
+}
+
+function addOrMergeMarker(m, lat, lng) {
+  const key = lat.toFixed(4) + ',' + lng.toFixed(4);
+
+  if (clusters[key]) {
+    // Dołącz do istniejącego klastra
+    clusters[key].listings.push(m);
+    const cl = clusters[key];
+    cl.marker.setPopupContent(buildPopup(cl.listings));
+    // Ikonę klastra robimy w kolorze mixed (szary)
+    cl.marker.setIcon(makeIcon('#555', 13));
+  } else {
+    const c    = PORTAL_COLORS[m.portal] || '#888';
+    const icon = makeIcon(c, 10);
+    const mk   = L.marker([lat, lng], { icon }).addTo(mapObj)
+                  .bindPopup(buildPopup([m]), { maxWidth: 240 });
+    clusters[key] = { marker: mk, listings: [m] };
+    markerById[m.auction_id] = mk;
+  }
+
+  // Zawsze rejestruj auction_id → marker (dla hover z karty)
+  if (!markerById[m.auction_id]) {
+    markerById[m.auction_id] = clusters[key].marker;
+  }
+}
+
+function geocodeOne(m, delay) {
+  setTimeout(() => {
+    const addr = (m.adres_pelny || m.dzielnica || '') + ', Kraków, Poland';
+    const cached = geoRead(addr);
+    if (cached) { addOrMergeMarker(m, cached.lat, cached.lng); return; }
+
+    fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(addr)}&format=json&limit=1`)
+      .then(r => r.json()).then(res => {
+        if (!res.length) return;
+        const lat = +res[0].lat, lng = +res[0].lon;
+        geoWrite(addr, { lat, lng });
+        addOrMergeMarker(m, lat, lng);
+      }).catch(() => {});
+  }, delay);
+}
+
+function initMap() {
+  mapObj = L.map('map').setView([50.0614, 19.9366], 12);
+  L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
+    attribution: '© OpenStreetMap © CARTO', maxZoom: 19
+  }).addTo(mapObj);
+
+  // Osobne liczniki dla ofert z cache (0ms delay) i bez cache (1100ms przerwa)
+  let networkIdx = 0;
+  PAGE_LISTINGS.forEach(m => {
+    const addr = (m.adres_pelny || m.dzielnica || '') + ', Kraków, Poland';
+    if (geoRead(addr)) {
+      geocodeOne(m, 0);          // natychmiast z cache
+    } else {
+      geocodeOne(m, networkIdx * 1150);  // kolejka sieciowa
+      networkIdx++;
+    }
+  });
+}
+
 function toggleMap() {
   const wrap = document.getElementById('map-wrap');
   const btn  = document.getElementById('map-btn');
   mapVisible = !mapVisible;
   wrap.classList.toggle('on', mapVisible);
   btn.classList.toggle('on', mapVisible);
-  if (mapVisible && !mapObj) {
-    mapObj = L.map('map').setView([50.0614, 19.9366], 12);
-    L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
-      attribution: '© OpenStreetMap © CARTO', maxZoom: 19
-    }).addTo(mapObj);
-    fetch('/api/markers').then(r => r.json()).then(data => {
-      data.forEach((m, i) => setTimeout(() => addMarker(m), i * 100));
-    });
-  }
+  if (mapVisible && !mapObj) initMap();
+  if (mapVisible && mapObj) setTimeout(() => mapObj.invalidateSize(), 50);
 }
 
-function addMarker(m) {
-  const q = encodeURIComponent((m.adres_pelny || m.dzielnica || '') + ', Kraków, Poland');
-  fetch(`https://nominatim.openstreetmap.org/search?q=${q}&format=json&limit=1`)
-    .then(r => r.json()).then(res => {
-      if (!res.length) return;
-      const colors = { otodom: '#C0392B', gratka: '#1D4ED8', nro: '#047857' };
-      const c = colors[m.portal] || '#888';
-      const icon = L.divIcon({
-        html: `<div style="width:10px;height:10px;border-radius:50%;background:${c};border:2px solid white;box-shadow:0 1px 4px rgba(0,0,0,.3)"></div>`,
-        className: '', iconSize: [10, 10], iconAnchor: [5, 5]
-      });
-      const cena = m.cena_pln ? new Intl.NumberFormat('pl').format(m.cena_pln) + ' zł' : '—';
-      L.marker([+res[0].lat, +res[0].lon], { icon }).addTo(mapObj)
-       .bindPopup(`<div style="font-family:Inter,sans-serif;min-width:160px">
-         ${m.zdjecie_url ? `<img src="${m.zdjecie_url}" style="width:100%;height:80px;object-fit:cover;border-radius:5px;margin-bottom:6px">` : ''}
-         <strong style="font-size:13px">${cena}</strong><br>
-         <span style="font-size:11px;color:#666">${m.metraz ? m.metraz + ' m² · ' : ''}${m.adres_pelny || ''}</span><br>
-         <a href="${m.url}" target="_blank" style="font-size:11px;color:${c};font-weight:600">Otwórz ofertę →</a>
-       </div>`);
-    }).catch(() => {});
+// ── Hover karta ↔ marker ────────────────────────────────────────────────────
+function cardHover(id, entering) {
+  // Podświetl kafelek listy (grid nie zmienia się, bo ma własny hover CSS)
+  document.querySelectorAll(`.lcard[data-id="${id}"]`).forEach(el => {
+    el.classList.toggle('map-highlight', entering);
+  });
+
+  if (!mapObj) return;
+  const mk = markerById[id];
+  if (!mk) return;
+
+  const [lat, lng] = [mk.getLatLng().lat, mk.getLatLng().lng];
+  const key = lat.toFixed(4) + ',' + lng.toFixed(4);
+  const cl  = clusters[key];
+  if (!cl) return;
+
+  const c    = PORTAL_COLORS[cl.listings[0].portal] || '#888';
+  const multi = cl.listings.length > 1;
+
+  if (entering) {
+    mk.setIcon(makeIcon(multi ? '#555' : c, 16));
+    mk.openPopup();
+  } else {
+    mk.setIcon(makeIcon(multi ? '#555' : c, multi ? 13 : 10));
+  }
 }
 </script>
 </body>

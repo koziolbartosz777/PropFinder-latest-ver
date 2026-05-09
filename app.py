@@ -1,4 +1,7 @@
 import os
+import json
+from decimal import Decimal
+from datetime import datetime, date
 import psycopg2
 import psycopg2.extras
 from flask import Flask, render_template, request, jsonify
@@ -7,6 +10,22 @@ from pathlib import Path
 
 load_dotenv(Path(__file__).parent / ".env")
 app = Flask(__name__)
+
+
+def to_json_safe(rows):
+    """Convert psycopg2 RealDictRow list to JSON-serialisable plain dicts."""
+    out = []
+    for row in rows:
+        d = {}
+        for k, v in dict(row).items():
+            if isinstance(v, Decimal):
+                d[k] = float(v)
+            elif isinstance(v, (datetime, date)):
+                d[k] = v.isoformat()
+            else:
+                d[k] = v
+        out.append(d)
+    return out
 
 
 def get_db():
@@ -96,8 +115,8 @@ def build_query(f, sort_col, sort_dir, limit, offset):
     sd = "DESC" if sort_dir == "desc" else "ASC"
     where = " AND ".join(w)
 
-    # Używamy LATERAL JOIN żeby mieć ceny dostępne w WHERE
-    base = f"""
+    # COUNT — prosta forma bez okna
+    base_from = f"""
         FROM auctions a
         LEFT JOIN LATERAL (
             SELECT cena_pln, cena_za_m2 FROM price_history
@@ -106,11 +125,21 @@ def build_query(f, sort_col, sort_dir, limit, offset):
         ) ph ON true
         WHERE {where}
     """
+    sql_count = f"SELECT COUNT(*) as total {base_from}"
 
-    sql_count = f"SELECT COUNT(*) as total {base}"
-    sql_data  = f"""
-        SELECT a.*, ph.cena_pln, ph.cena_za_m2 {base}
-        ORDER BY {sc} {sd} NULLS LAST, a.portal  -- dodatkowy sort żeby mieszać portale
+    # DATA — round-robin po portalu: sortujemy wg numeru wiersza wewnątrz każdego
+    # portalu, dzięki czemu otodom/gratka/nro przeplatają się zamiast grupować.
+    sql_data = f"""
+        SELECT sub.*
+        FROM (
+            SELECT a.*, ph.cena_pln, ph.cena_za_m2,
+                   ROW_NUMBER() OVER (
+                       PARTITION BY a.portal
+                       ORDER BY {sc} {sd} NULLS LAST
+                   ) AS _rn
+            {base_from}
+        ) sub
+        ORDER BY sub._rn ASC, sub.portal ASC
         LIMIT %s OFFSET %s
     """
     return sql_count, sql_data, p, limit, offset
@@ -154,8 +183,11 @@ def index():
         import traceback; traceback.print_exc()
         mieszkania, lacznie = [], 0
 
+    mieszkania_safe = to_json_safe(mieszkania)
     return render_template("index.html",
-        mieszkania=mieszkania, filtry=f,
+        mieszkania=mieszkania_safe,
+        mieszkania_json=json.dumps(mieszkania_safe, ensure_ascii=False),
+        filtry=f,
         sort=sort_col, kierunek=sort_dir,
         strona=strona, liczba_stron=max(1, -(-lacznie // na_stronie)),
         lacznie=lacznie,
@@ -244,29 +276,31 @@ def analiza():
 
 @app.route("/api/markers")
 def markers():
-    """Markery dla aktualnie widocznych ofert (przekazane jako auction_ids)."""
+    """Markery dla listy auction_ids z bieżącej strony (ids[]=... query params)."""
+    ids = request.args.getlist("ids")
+    if not ids:
+        return jsonify([])
     try:
         conn = get_db()
         cur  = conn.cursor()
-        cur.execute("""
+        ph   = ",".join(["%s"] * len(ids))
+        cur.execute(f"""
             SELECT a.auction_id, a.tytul, a.metraz, a.pokoje,
                    a.adres_pelny, a.dzielnica, a.miasto,
                    a.zdjecie_url, a.url, a.portal,
-                   ph.cena_pln
+                   pr.cena_pln
             FROM auctions a
             LEFT JOIN LATERAL (
                 SELECT cena_pln FROM price_history
                 WHERE auction_id = a.auction_id
                 ORDER BY timestamp DESC LIMIT 1
-            ) ph ON true
-            WHERE a.status = 'active'
-              AND (a.dzielnica IS NOT NULL OR a.adres_pelny IS NOT NULL)
-            LIMIT 24
-        """)
+            ) pr ON true
+            WHERE a.auction_id IN ({ph})
+        """, ids)
         rows = cur.fetchall()
         conn.close()
-        return jsonify([dict(r) for r in rows])
-    except Exception as e:
+        return jsonify(to_json_safe(rows))
+    except Exception:
         return jsonify([])
 
 

@@ -85,6 +85,31 @@ def main():
                 if not ok:
                     failed.append(f"{spider}@{city}")
 
+        # ── Backfill missing cena_za_m2 in price_history ─────────────────────
+        log("\n[migrate] Backfilling NULL cena_za_m2 records…", lf)
+        try:
+            sys.path.insert(0, str(PROJECT_DIR))
+            from ScraperMieszkan.utils import get_db_connection
+            conn_m = get_db_connection()
+            cur_m  = conn_m.cursor()
+            cur_m.execute("""
+                UPDATE price_history ph
+                SET    cena_za_m2 = ROUND(ph.cena_pln::numeric / a.metraz)
+                FROM   auctions a
+                WHERE  ph.auction_id   = a.auction_id
+                  AND  ph.cena_za_m2   IS NULL
+                  AND  ph.cena_pln     IS NOT NULL
+                  AND  a.metraz        IS NOT NULL
+                  AND  a.metraz        > 0
+            """)
+            updated = cur_m.rowcount
+            conn_m.commit()
+            cur_m.close()
+            conn_m.close()
+            log(f"[migrate] Updated {updated} rows.", lf)
+        except Exception as exc:
+            log(f"[migrate] ERROR: {exc}", lf)
+
         # ── Mark gone listings ────────────────────────────────────────────────
         log("\n[mark_sold] Updating gone listings…", lf)
         try:

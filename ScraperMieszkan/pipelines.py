@@ -101,7 +101,17 @@ class DatabasePipeline:
         auction_id = adapter.get("auction_id")
         cena_pln = adapter.get("cena_pln")
         cena_za_m2 = adapter.get("cena_za_m2")
+        metraz = adapter.get("metraz")
         timestamp = adapter.get("timestamp")
+
+        # Jeśli portal nie podał cena_za_m2, obliczamy sami z cena_pln / metraz
+        if cena_za_m2 is None and cena_pln and metraz:
+            try:
+                m = float(metraz)
+                if m > 0:
+                    cena_za_m2 = round(int(cena_pln) / m)
+            except (TypeError, ValueError, ZeroDivisionError):
+                pass
 
         if cena_pln is None and cena_za_m2 is None:
             return

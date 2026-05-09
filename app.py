@@ -119,7 +119,14 @@ def build_query(f, sort_col, sort_dir, limit, offset):
     base_from = f"""
         FROM auctions a
         LEFT JOIN LATERAL (
-            SELECT cena_pln, cena_za_m2 FROM price_history
+            SELECT cena_pln,
+                   COALESCE(cena_za_m2,
+                     CASE WHEN cena_pln IS NOT NULL
+                               AND a.metraz IS NOT NULL AND a.metraz > 0
+                          THEN ROUND(cena_pln::numeric / a.metraz)
+                     END
+                   ) AS cena_za_m2
+            FROM price_history
             WHERE auction_id = a.auction_id
             ORDER BY timestamp DESC LIMIT 1
         ) ph ON true
@@ -150,7 +157,13 @@ def build_query(f, sort_col, sort_dir, limit, offset):
                 COUNT(*) AS lacznie_blizniatow
             FROM auctions a2
             LEFT JOIN LATERAL (
-                SELECT cena_za_m2 FROM price_history
+                SELECT COALESCE(cena_za_m2,
+                         CASE WHEN cena_pln IS NOT NULL
+                                   AND a2.metraz IS NOT NULL AND a2.metraz > 0
+                              THEN ROUND(cena_pln::numeric / a2.metraz)
+                         END
+                       ) AS cena_za_m2
+                FROM price_history
                 WHERE auction_id = a2.auction_id
                 ORDER BY timestamp DESC LIMIT 1
             ) ph2 ON true
@@ -232,7 +245,14 @@ def analiza():
                    ROUND(AVG(EXTRACT(EPOCH FROM (NOW() - a.first_seen))/86400)) as avg_dni_na_rynku
             FROM auctions a
             LEFT JOIN LATERAL (
-                SELECT cena_pln, cena_za_m2 FROM price_history
+                SELECT cena_pln,
+                       COALESCE(cena_za_m2,
+                         CASE WHEN cena_pln IS NOT NULL
+                                   AND a.metraz IS NOT NULL AND a.metraz > 0
+                              THEN ROUND(cena_pln::numeric / a.metraz)
+                         END
+                       ) AS cena_za_m2
+                FROM price_history
                 WHERE auction_id = a.auction_id
                 ORDER BY timestamp DESC LIMIT 1
             ) ph ON true
@@ -279,7 +299,14 @@ def analiza():
                    ROUND(100.0 * score.tanszych / NULLIF(score.lacznie_blizniatow, 0)) as pct_tanszych
             FROM auctions a
             LEFT JOIN LATERAL (
-                SELECT cena_pln, cena_za_m2 FROM price_history
+                SELECT cena_pln,
+                       COALESCE(cena_za_m2,
+                         CASE WHEN cena_pln IS NOT NULL
+                                   AND a.metraz IS NOT NULL AND a.metraz > 0
+                              THEN ROUND(cena_pln::numeric / a.metraz)
+                         END
+                       ) AS cena_za_m2
+                FROM price_history
                 WHERE auction_id = a.auction_id
                 ORDER BY timestamp DESC LIMIT 1
             ) ph ON true
@@ -289,7 +316,13 @@ def analiza():
                     COUNT(*) AS lacznie_blizniatow
                 FROM auctions a2
                 LEFT JOIN LATERAL (
-                    SELECT cena_za_m2 FROM price_history
+                    SELECT COALESCE(cena_za_m2,
+                             CASE WHEN cena_pln IS NOT NULL
+                                       AND a2.metraz IS NOT NULL AND a2.metraz > 0
+                                  THEN ROUND(cena_pln::numeric / a2.metraz)
+                             END
+                           ) AS cena_za_m2
+                    FROM price_history
                     WHERE auction_id = a2.auction_id
                     ORDER BY timestamp DESC LIMIT 1
                 ) ph2 ON true
@@ -308,7 +341,7 @@ def analiza():
         """)
         best_value = cur.fetchall()
 
-        # d) Per portal stats (unchanged)
+        # d) Per portal stats — cena_za_m2 obliczana z cena_pln/metraz gdy brak w bazie
         cur.execute("""
             SELECT a.portal,
                    COUNT(*) as liczba,
@@ -316,7 +349,14 @@ def analiza():
                    ROUND(AVG(ph.cena_za_m2)) as avg_m2
             FROM auctions a
             LEFT JOIN LATERAL (
-                SELECT cena_pln, cena_za_m2 FROM price_history
+                SELECT cena_pln,
+                       COALESCE(cena_za_m2,
+                         CASE WHEN cena_pln IS NOT NULL
+                                   AND a.metraz IS NOT NULL AND a.metraz > 0
+                              THEN ROUND(cena_pln::numeric / a.metraz)
+                         END
+                       ) AS cena_za_m2
+                FROM price_history
                 WHERE auction_id = a.auction_id
                 ORDER BY timestamp DESC LIMIT 1
             ) ph ON true

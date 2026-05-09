@@ -235,9 +235,24 @@
     .btn-show-map:hover { border-color: #059669; color: #059669; background: #F0FDF4; }
     .btn-show-map svg { flex-shrink: 0; }
 
-    /* ATTRACTIVENESS BADGES */
-    .badge-good { display:inline-block; padding:2px 8px; border-radius:4px; font-size:10px; font-weight:700; background:#D1FAE5; color:#065F46; }
-    .badge-bad  { display:inline-block; padding:2px 8px; border-radius:4px; font-size:10px; font-weight:700; background:#FEF3C7; color:#92400E; }
+    /* ATTRACTIVENESS BADGES — 5-tier spectrum */
+    .bpct-badge { display:inline-block; padding:2px 8px; border-radius:4px; font-size:10px; font-weight:700; margin-top:4px; white-space:nowrap; }
+    .bpct-80 { background:#D1FAE5; color:#065F46; }  /* ≥80 % — bardzo tania */
+    .bpct-60 { background:#A7F3D0; color:#065F46; }  /* 60–79 % — tania */
+    .bpct-40 { background:#FEF9C3; color:#854D0E; }  /* 40–59 % — rynkowa */
+    .bpct-20 { background:#FFEDD5; color:#9A3412; }  /* 20–39 % — droga */
+    .bpct-0  { background:#FEE2E2; color:#991B1B; }  /* <20 %  — bardzo droga */
+
+    /* Score-toggle switch */
+    .toggle-switch { position:relative; display:inline-block; width:36px; height:20px; flex-shrink:0; }
+    .toggle-switch input { opacity:0; width:0; height:0; }
+    .toggle-slider { position:absolute; cursor:pointer; top:0; left:0; right:0; bottom:0;
+                     background:var(--border); border-radius:20px; transition:.2s; }
+    .toggle-slider::before { position:absolute; content:""; height:14px; width:14px;
+                              left:3px; bottom:3px; background:#fff; border-radius:50%; transition:.2s; }
+    .toggle-switch input:checked + .toggle-slider { background:var(--accent); }
+    .toggle-switch input:checked + .toggle-slider::before { transform:translateX(16px); }
+
     .dni-tag { font-size:10.5px; color:var(--muted); display:flex; align-items:center; gap:3px; margin-top:2px; }
 
     /* EMPTY */
@@ -373,6 +388,22 @@
       <button type="submit" class="btn-search">Szukaj</button>
       <a href="/" class="btn-reset">Wyczyść filtry</a>
     </form>
+
+    <!-- Score toggle — poza formularzem, nie wpływa na filtry -->
+    <div class="divider"></div>
+    <div class="fg">
+      <div class="fg-label" style="display:flex;justify-content:space-between;align-items:center">
+        Atrakcyjność cenowa
+        <label class="toggle-switch">
+          <input type="checkbox" id="score-toggle" checked onchange="toggleScore(this.checked)">
+          <span class="toggle-slider"></span>
+        </label>
+      </div>
+      <div style="font-size:10.5px;color:var(--muted);margin-top:5px;line-height:1.45">
+        Kolorowy badge: % podobnych ofert tańszych niż ta.
+        Wymaga min. 3 bliźniaczych ogłoszeń.
+      </div>
+    </div>
   </aside>
 
   <!-- CONTENT -->
@@ -435,6 +466,23 @@
       {%- endif -%}
     {% endmacro %}
 
+    {% macro score_badge(m) %}
+      {%- if m.lacznie_blizniatow and m.lacznie_blizniatow >= 3 and m.pct_tanszych is not none -%}
+        {%- set pct = m.pct_tanszych | int -%}
+        {%- if pct >= 80 -%}
+          <span class="bpct-badge bpct-80">Tańsza niż {{ pct }}% podobnych</span>
+        {%- elif pct >= 60 -%}
+          <span class="bpct-badge bpct-60">Tańsza niż {{ pct }}% podobnych</span>
+        {%- elif pct >= 40 -%}
+          <span class="bpct-badge bpct-40">Blisko średniej rynku ({{ pct }}%)</span>
+        {%- elif pct >= 20 -%}
+          <span class="bpct-badge bpct-20">Droższa niż {{ 100 - pct }}% podobnych</span>
+        {%- else -%}
+          <span class="bpct-badge bpct-0">Droższa niż {{ 100 - pct }}% podobnych</span>
+        {%- endif -%}
+      {%- endif -%}
+    {% endmacro %}
+
     {% if mieszkania %}
     <div class="grid" id="cards">
       {% for m in mieszkania %}
@@ -459,14 +507,7 @@
           <div>
             <div class="card-price">{% if m.cena_pln %}{{ "{:,.0f}".format(m.cena_pln).replace(",", " ") }} zł{% else %}Cena do uzgodnienia{% endif %}</div>
             {% if m.cena_za_m2 %}<div class="card-price-m2">{{ "{:,.0f}".format(m.cena_za_m2).replace(",", " ") }} zł/m²</div>{% endif %}
-            {% if m.lacznie_blizniatow and m.lacznie_blizniatow >= 3 and m.pct_tanszych is not none %}
-              {% set pct = m.pct_tanszych | int %}
-              {% if pct >= 70 %}
-                <span class="badge-good" style="margin-top:4px">Tańsza niż {{ pct }}% podobnych</span>
-              {% elif pct <= 30 %}
-                <span class="badge-bad" style="margin-top:4px">Droższa niż {{ 100 - pct }}% podobnych</span>
-              {% endif %}
-            {% endif %}
+            {{ score_badge(m) }}
           </div>
           <div class="card-title">{{ m.tytul or "Brak tytułu" }}</div>
           <div class="card-chips">
@@ -511,14 +552,7 @@
             <div class="lcard-pricing">
               <div class="lcard-price">{% if m.cena_pln %}{{ "{:,.0f}".format(m.cena_pln).replace(",", " ") }} zł{% else %}Cena do uzgodnienia{% endif %}</div>
               {% if m.cena_za_m2 %}<div class="lcard-price-m2">{{ "{:,.0f}".format(m.cena_za_m2).replace(",", " ") }} zł/m²</div>{% endif %}
-              {% if m.lacznie_blizniatow and m.lacznie_blizniatow >= 3 and m.pct_tanszych is not none %}
-                {% set pct = m.pct_tanszych | int %}
-                {% if pct >= 70 %}
-                  <span class="badge-good" style="margin-top:4px">Tańsza niż {{ pct }}% podobnych</span>
-                {% elif pct <= 30 %}
-                  <span class="badge-bad" style="margin-top:4px">Droższa niż {{ 100 - pct }}% podobnych</span>
-                {% endif %}
-              {% endif %}
+              {{ score_badge(m) }}
             </div>
             <span class="lcard-portal-badge tag-{{ m.portal }}">{{ m.portal }}</span>
           </div>
@@ -636,6 +670,27 @@ function setView(v) {
   try {
     const saved = localStorage.getItem('propView');
     if (saved === 'list') setView('list');
+  } catch {}
+})();
+
+// ── SCORE TOGGLE ───────────────────────────────────────────────────────────
+function toggleScore(on) {
+  document.querySelectorAll('.bpct-badge').forEach(b => {
+    b.style.display = on ? '' : 'none';
+  });
+  try { localStorage.setItem('propScore', on ? '1' : '0'); } catch {}
+}
+
+// Przywróć stan toggle po przeładowaniu
+(function() {
+  try {
+    const saved = localStorage.getItem('propScore');
+    const on = saved !== '0'; // domyślnie: włączone
+    const chk = document.getElementById('score-toggle');
+    if (chk) chk.checked = on;
+    if (!on) {
+      document.querySelectorAll('.bpct-badge').forEach(b => b.style.display = 'none');
+    }
   } catch {}
 })();
 

@@ -238,6 +238,7 @@
     /* ATTRACTIVENESS BADGES */
     .badge-good { display:inline-block; padding:2px 8px; border-radius:4px; font-size:10px; font-weight:700; background:#D1FAE5; color:#065F46; }
     .badge-bad  { display:inline-block; padding:2px 8px; border-radius:4px; font-size:10px; font-weight:700; background:#FEF3C7; color:#92400E; }
+    .dni-tag { font-size:10.5px; color:var(--muted); display:flex; align-items:center; gap:3px; margin-top:2px; }
 
     /* EMPTY */
     .empty { text-align: center; padding: 60px 20px; color: var(--muted); grid-column: 1/-1; }
@@ -422,6 +423,18 @@
     <div id="map-wrap"><div id="map"></div></div>
 
     <!-- Oferty -->
+    {% macro dni_label(d) %}
+      {%- if d is not none -%}
+        {%- if d == 0 -%}Dzisiaj
+        {%- elif d == 1 -%}Wczoraj
+        {%- elif d < 7 -%}{{ d }} dni
+        {%- elif d < 30 -%}{{ (d // 7) }} tyg.
+        {%- elif d < 365 -%}{{ (d // 30) }} mies.
+        {%- else -%}{{ (d // 365) }} lat
+        {%- endif -%}
+      {%- endif -%}
+    {% endmacro %}
+
     {% if mieszkania %}
     <div class="grid" id="cards">
       {% for m in mieszkania %}
@@ -466,6 +479,12 @@
           <div class="card-addr">
             <svg width="10" height="10" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z"/></svg>
             {{ m.adres_pelny }}
+          </div>
+          {% endif %}
+          {% if m.dni_na_rynku is not none %}
+          <div class="dni-tag">
+            <svg width="10" height="10" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
+            Na portalu: {{ dni_label(m.dni_na_rynku) }}
           </div>
           {% endif %}
           <button class="btn-show-map" onclick="showOnMap('{{ m.auction_id }}', event)">
@@ -516,6 +535,12 @@
             <div class="lcard-addr">
               <svg width="10" height="10" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z"/></svg>
               {{ m.adres_pelny }}
+            </div>
+            {% endif %}
+            {% if m.dni_na_rynku is not none %}
+            <div class="dni-tag">
+              <svg width="10" height="10" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
+              Na portalu: {{ dni_label(m.dni_na_rynku) }}
             </div>
             {% endif %}
             <button class="btn-show-map" onclick="showOnMap('{{ m.auction_id }}', event)">
@@ -603,7 +628,16 @@ function setView(v) {
     document.getElementById('vg').classList.add('on');
     document.getElementById('vl').classList.remove('on');
   }
+  try { localStorage.setItem('propView', v); } catch {}
 }
+
+// Przywróć widok po paginacji / przeładowaniu strony
+(function() {
+  try {
+    const saved = localStorage.getItem('propView');
+    if (saved === 'list') setView('list');
+  } catch {}
+})();
 
 // ── MAPA ───────────────────────────────────────────────────────────────────
 const PORTAL_COLORS = { otodom: '#C0392B', gratka: '#1D4ED8', nro: '#047857' };

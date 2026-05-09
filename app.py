@@ -137,6 +137,7 @@ def build_query(f, sort_col, sort_dir, limit, offset):
                ROUND(100.0 * score.tanszych / NULLIF(score.lacznie_blizniatow, 0)) AS pct_tanszych
         FROM (
             SELECT a.*, ph.cena_pln, ph.cena_za_m2,
+                   GREATEST(0, ROUND(EXTRACT(EPOCH FROM (NOW() - a.first_seen))/86400))::integer AS dni_na_rynku,
                    ROW_NUMBER() OVER (
                        PARTITION BY a.portal
                        ORDER BY {sc} {sd} NULLS LAST

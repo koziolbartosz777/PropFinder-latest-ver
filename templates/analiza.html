@@ -438,14 +438,12 @@
           <div class="portal-stat-val">{{ "{:,}".format(p.liczba).replace(",", " ") }}</div>
           <div class="portal-stat-lbl">aktywnych ofert</div>
         </div>
-        {% if p.avg_m2 %}
         <div class="portal-stat">
           <div class="portal-stat-val" style="font-size:17px">
-            {{ "{:,.0f}".format(p.avg_m2).replace(",", " ") }} zł/m²
+            {% if p.avg_m2 %}{{ "{:,.0f}".format(p.avg_m2).replace(",", " ") }} zł/m²{% else %}<span style="color:var(--muted);font-size:13px">brak danych</span>{% endif %}
           </div>
           <div class="portal-stat-lbl">średnia cena za m²</div>
         </div>
-        {% endif %}
         {% if p.avg_cena %}
         <div class="portal-stat">
           <div class="portal-stat-val" style="font-size:15px;color:var(--mid)">

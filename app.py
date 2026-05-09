@@ -168,7 +168,9 @@ def build_query(f, sort_col, sort_dir, limit, offset):
                 ORDER BY timestamp DESC LIMIT 1
             ) ph2 ON true
             WHERE a2.status = 'active'
-              AND a2.dzielnica = sub.dzielnica
+              AND a2.dzielnica = sub.dzielnica          -- tylko porównanie w tej samej dzielnicy
+              AND sub.dzielnica IS NOT NULL              -- brak dzielnicy = brak badge'a (zamiast mylących porównań miasto-wide)
+              AND sub.dzielnica != ''
               AND a2.pokoje = sub.pokoje
               AND a2.metraz BETWEEN sub.metraz * 0.8 AND sub.metraz * 1.2
               AND ph2.cena_za_m2 IS NOT NULL
@@ -213,10 +215,13 @@ def index():
         lacznie = cur.fetchone()["total"]
         cur.execute(sql_data, params + [lim, off])
         mieszkania = cur.fetchall()
+        cur.execute("SELECT MAX(last_seen) AS ostatni FROM auctions WHERE status = 'active'")
+        row = cur.fetchone()
+        ostatni_scraping = row["ostatni"] if row and row["ostatni"] else None
         conn.close()
     except Exception as e:
         import traceback; traceback.print_exc()
-        mieszkania, lacznie = [], 0
+        mieszkania, lacznie, ostatni_scraping = [], 0, None
 
     mieszkania_safe = to_json_safe(mieszkania)
     return render_template("index.html",
@@ -226,6 +231,7 @@ def index():
         sort=sort_col, kierunek=sort_dir,
         strona=strona, liczba_stron=max(1, -(-lacznie // na_stronie)),
         lacznie=lacznie,
+        ostatni_scraping=ostatni_scraping,
     )
 
 
@@ -327,7 +333,9 @@ def analiza():
                     ORDER BY timestamp DESC LIMIT 1
                 ) ph2 ON true
                 WHERE a2.status = 'active'
-                  AND a2.dzielnica = a.dzielnica
+                  AND a2.dzielnica = a.dzielnica        -- tylko ta sama dzielnica
+                  AND a.dzielnica IS NOT NULL
+                  AND a.dzielnica != ''
                   AND a2.pokoje = a.pokoje
                   AND a2.metraz BETWEEN a.metraz * 0.8 AND a.metraz * 1.2
                   AND ph2.cena_za_m2 IS NOT NULL
@@ -366,16 +374,94 @@ def analiza():
         """)
         portale = cur.fetchall()
 
+        # e) Największe obniżki cen w ostatnich 7 dniach
+        cur.execute("""
+            WITH price_changes AS (
+                SELECT
+                    ph.auction_id,
+                    ph.cena_pln                                                  AS cena_aktualna,
+                    ph.timestamp                                                 AS ts_aktualna,
+                    LAG(ph.cena_pln) OVER (PARTITION BY ph.auction_id
+                                           ORDER BY ph.timestamp)                AS cena_poprzednia,
+                    ROW_NUMBER() OVER (PARTITION BY ph.auction_id
+                                       ORDER BY ph.timestamp DESC)               AS rn
+                FROM price_history ph
+                WHERE ph.cena_pln IS NOT NULL
+            )
+            SELECT
+                a.auction_id, a.url, a.portal, a.tytul, a.metraz, a.pokoje,
+                a.dzielnica, a.adres_pelny, a.zdjecie_url,
+                pc.cena_aktualna,
+                pc.cena_poprzednia,
+                pc.cena_poprzednia - pc.cena_aktualna          AS kwota_obniżki,
+                ROUND(100.0 * (pc.cena_poprzednia - pc.cena_aktualna)
+                      / pc.cena_poprzednia)                    AS pct_obniżki,
+                pc.ts_aktualna
+            FROM price_changes pc
+            JOIN auctions a ON pc.auction_id = a.auction_id
+            WHERE pc.rn               = 1
+              AND pc.cena_poprzednia  IS NOT NULL
+              AND pc.cena_aktualna    < pc.cena_poprzednia
+              AND pc.ts_aktualna      >= NOW() - INTERVAL '7 days'
+              AND a.status            = 'active'
+            ORDER BY pct_obniżki DESC
+            LIMIT 20
+        """)
+        obniżki = cur.fetchall()
+
+        # f) Trendy cenowe miesięcznie — top 6 dzielnic wg liczby ofert
+        cur.execute("""
+            WITH top_dist AS (
+                SELECT dzielnica
+                FROM auctions
+                WHERE status = 'active'
+                  AND dzielnica IS NOT NULL AND dzielnica != ''
+                GROUP BY dzielnica
+                ORDER BY COUNT(*) DESC
+                LIMIT 6
+            )
+            SELECT
+                TO_CHAR(DATE_TRUNC('month', ph.timestamp), 'YYYY-MM') AS miesiac,
+                a.dzielnica,
+                ROUND(PERCENTILE_CONT(0.5) WITHIN GROUP (
+                    ORDER BY COALESCE(ph.cena_za_m2,
+                        CASE WHEN ph.cena_pln IS NOT NULL
+                                  AND a.metraz IS NOT NULL AND a.metraz > 0
+                             THEN ROUND(ph.cena_pln::numeric / a.metraz) END)
+                )) AS mediana_m2,
+                COUNT(*) AS liczba
+            FROM price_history ph
+            JOIN auctions a  ON ph.auction_id = a.auction_id
+            JOIN top_dist td ON a.dzielnica   = td.dzielnica
+            WHERE ph.timestamp >= NOW() - INTERVAL '12 months'
+              AND (ph.cena_za_m2 IS NOT NULL
+                   OR (ph.cena_pln IS NOT NULL
+                       AND a.metraz IS NOT NULL AND a.metraz > 0))
+            GROUP BY 1, 2
+            HAVING COUNT(*) >= 3
+            ORDER BY 1, 2
+        """)
+        trendy = cur.fetchall()
+
+        # g) Freshness
+        cur.execute("SELECT MAX(last_seen) AS ostatni FROM auctions WHERE status = 'active'")
+        row = cur.fetchone()
+        ostatni_scraping = row["ostatni"] if row and row["ostatni"] else None
+
         conn.close()
     except Exception as e:
         import traceback; traceback.print_exc()
         dzielnice, portale, rozklad, best_value = [], [], [], []
+        obniżki, trendy, ostatni_scraping = [], [], None
 
     return render_template("analiza.html",
         dzielnice=to_json_safe(dzielnice),
         portale=to_json_safe(portale),
         rozklad=to_json_safe(rozklad),
         best_value=to_json_safe(best_value),
+        obniżki=to_json_safe(obniżki),
+        trendy_json=json.dumps(to_json_safe(trendy), ensure_ascii=False),
+        ostatni_scraping=ostatni_scraping,
     )
 
 
@@ -402,6 +488,32 @@ def markers():
             ) pr ON true
             WHERE a.auction_id IN ({ph})
         """, ids)
+        rows = cur.fetchall()
+        conn.close()
+        return jsonify(to_json_safe(rows))
+    except Exception:
+        return jsonify([])
+
+
+@app.route("/api/price_history/<auction_id>")
+def api_price_history(auction_id):
+    """Historia cen danej oferty — do wykresu w modalu."""
+    try:
+        conn = get_db()
+        cur  = conn.cursor()
+        cur.execute("""
+            SELECT ph.timestamp,
+                   ph.cena_pln,
+                   COALESCE(ph.cena_za_m2,
+                     CASE WHEN ph.cena_pln IS NOT NULL
+                               AND a.metraz IS NOT NULL AND a.metraz > 0
+                          THEN ROUND(ph.cena_pln::numeric / a.metraz) END
+                   ) AS cena_za_m2
+            FROM price_history ph
+            JOIN auctions a ON ph.auction_id = a.auction_id
+            WHERE ph.auction_id = %s
+            ORDER BY ph.timestamp ASC
+        """, (auction_id,))
         rows = cur.fetchall()
         conn.close()
         return jsonify(to_json_safe(rows))

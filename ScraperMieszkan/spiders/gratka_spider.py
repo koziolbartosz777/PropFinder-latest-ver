@@ -152,14 +152,26 @@ class GratkaSpider(scrapy.Spider):
         seen = set()
         main_loc = [x for x in main_loc if not (x in seen or seen.add(x))]
         # main_loc np.: ["małopolskie", "Kraków", "Podgórze Duchackie"]
-        dzielnica = main_loc[-1] if main_loc else ""
-        miasto_loc = next((x for x in reversed(main_loc[:-1]) if x not in ("małopolskie", "mazowieckie", "dolnośląskie", "pomorskie", "wielkopolskie")), "")
+        # Ostatni element to dzielnica — ale tylko jeśli NIE jest nazwą miasta
+        MIASTA_NAZWY = {"Kraków", "Warszawa", "Wrocław", "Gdańsk", "Poznań", "Łódź", "Katowice",
+                        "Szczecin", "Bydgoszcz", "Lublin", "Białystok", "Rzeszów", "Toruń"}
+        WOJEW = {"małopolskie", "mazowieckie", "dolnośląskie", "pomorskie", "wielkopolskie",
+                 "śląskie", "lubelskie", "podkarpackie", "łódzkie", "kujawsko-pomorskie",
+                 "warmińsko-mazurskie", "zachodniopomorskie", "opolskie", "podlaskie",
+                 "świętokrzyskie", "lubuskie"}
+        dzielnica_raw = main_loc[-1] if main_loc else ""
+        dzielnica = dzielnica_raw if (dzielnica_raw
+                                      and dzielnica_raw not in MIASTA_NAZWY
+                                      and dzielnica_raw.lower() not in WOJEW) else ""
+        miasto_loc = next((x for x in reversed(main_loc[:-1]) if x not in WOJEW and x.lower() not in WOJEW), "")
         if dzielnica:
             loader.add_value("dzielnica", dzielnica)
         if dzielnica and miasto_loc:
             loader.add_value("adres_pelny", f"{dzielnica}, {miasto_loc}")
         elif dzielnica:
             loader.add_value("adres_pelny", dzielnica)
+        elif miasto_loc:
+            loader.add_value("adres_pelny", miasto_loc)
 
 
         # Opis

@@ -9,6 +9,26 @@ from ScraperMieszkan.utils import load_parsed_ids
 
 BASE_URL = "https://www.otodom.pl/pl/wyniki/sprzedaz/mieszkanie/{slug}?page={page}"
 
+# Nagłówki imitujące przeglądarkę — zmniejszają ryzyko blokady przez Cloudflare
+OTODOM_HEADERS = {
+    "User-Agent": (
+        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+        "AppleWebKit/537.36 (KHTML, like Gecko) "
+        "Chrome/124.0.0.0 Safari/537.36"
+    ),
+    "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8",
+    "Accept-Language": "pl-PL,pl;q=0.9,en-US;q=0.8,en;q=0.7",
+    "Accept-Encoding": "gzip, deflate, br",
+    "Cache-Control": "no-cache",
+    "Pragma": "no-cache",
+    "Sec-Fetch-Dest": "document",
+    "Sec-Fetch-Mode": "navigate",
+    "Sec-Fetch-Site": "none",
+    "Sec-Fetch-User": "?1",
+    "Upgrade-Insecure-Requests": "1",
+}
+
+
 class OtodomSpider(scrapy.Spider):
     name = "otodom"
 
@@ -21,12 +41,26 @@ class OtodomSpider(scrapy.Spider):
             yield scrapy.Request(
                 url,
                 callback=self.parse,
+                headers=OTODOM_HEADERS,
                 cb_kwargs={"location_key": location_key, "slug": slug, "page": strona},
             )
 
     def parse(self, response, location_key, slug, page):
+        # Wykryj blokadę Cloudflare
+        if response.status in (403, 429, 503) or b"cf-browser-verification" in response.body:
+            self.logger.error(
+                f"[otodom] Cloudflare block (HTTP {response.status}) na stronie {page} — "
+                "spróbuj uruchomić spider ręcznie lub zmień IP."
+            )
+            return
+
         raw_next_data = response.css("script#__NEXT_DATA__::text").get()
         if not raw_next_data:
+            self.logger.warning(
+                f"[otodom] Brak __NEXT_DATA__ na stronie {page} ({response.url}). "
+                f"Status: {response.status}. "
+                "Prawdopodobna blokada — brak danych otodom w tej sesji."
+            )
             return
 
         data = json.loads(raw_next_data)
@@ -115,7 +149,12 @@ class OtodomSpider(scrapy.Spider):
                 if auction_id in self.parsed_ids:
                     yield item
                 else:
-                    yield scrapy.Request(url, callback=self.parse_details, cb_kwargs={"item": item})
+                    yield scrapy.Request(
+                        url,
+                        callback=self.parse_details,
+                        headers={**OTODOM_HEADERS, "Referer": response.url},
+                        cb_kwargs={"item": item},
+                    )
             except Exception as exc:
                 self.logger.warning("Błąd parsowania item %s: %s", raw_item.get("id"), exc)
                 continue
@@ -126,10 +165,11 @@ class OtodomSpider(scrapy.Spider):
             return
 
         next_page = page + 1
+        next_headers = {**OTODOM_HEADERS, "Referer": response.url}
         yield scrapy.Request(
             BASE_URL.format(slug=slug, page=next_page),
             callback=self.parse,
-            headers={"Referer": response.url},
+            headers=next_headers,
             cb_kwargs={"location_key": location_key, "slug": slug, "page": next_page},
         )
 

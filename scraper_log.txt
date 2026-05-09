@@ -23,3 +23,61 @@ Successful    : 3
 Failed        : 0
 ────────────────────────────────────────────────────────────
 
+
+============================================================
+PropAgent scraper run started at 2026-05-09 19:15:12
+============================================================
+[otodom@krakow] Starting: C:\Users\bkozi\AppData\Local\Programs\Python\Python312\python.exe -m scrapy crawl otodom -a miasto=krakow -a max_stron=10
+[otodom@krakow] Finished OK (exit 0)
+[gratka@krakow] Starting: C:\Users\bkozi\AppData\Local\Programs\Python\Python312\python.exe -m scrapy crawl gratka -a miasto=krakow -a max_stron=10
+[gratka@krakow] Finished OK (exit 0)
+[nro@krakow] Starting: C:\Users\bkozi\AppData\Local\Programs\Python\Python312\python.exe -m scrapy crawl nro -a miasto=krakow -a max_stron=10
+[nro@krakow] Finished OK (exit 0)
+
+[migrate] Backfilling NULL cena_za_m2 records…
+[migrate] ERROR: connection to server at "localhost" (::1), port 5432 failed: fe_sendauth: no password supplied
+
+
+[migrate] Backfilling dzielnica for NRO from adres_pelny…
+[migrate] dzielnica ERROR: connection to server at "localhost" (::1), port 5432 failed: fe_sendauth: no password supplied
+
+
+[mark_sold] Updating gone listings…
+[mark_sold] Done.
+
+────────────────────────────────────────────────────────────
+Run finished at 2026-05-09 19:18:27  (took 0:03:14.210726)
+Spiders run   : 3
+Successful    : 3
+Failed        : 0
+────────────────────────────────────────────────────────────
+
+
+============================================================
+PropAgent scraper run started at 2026-05-09 21:48:45
+============================================================
+[otodom@krakow] Starting: C:\Users\bkozi\AppData\Local\Programs\Python\Python312\pythonw.exe -m scrapy crawl otodom -a miasto=krakow -a max_stron=10
+[otodom@krakow] Finished OK (exit 0)
+[gratka@krakow] Starting: C:\Users\bkozi\AppData\Local\Programs\Python\Python312\pythonw.exe -m scrapy crawl gratka -a miasto=krakow -a max_stron=10
+[gratka@krakow] Finished OK (exit 0)
+[nro@krakow] Starting: C:\Users\bkozi\AppData\Local\Programs\Python\Python312\pythonw.exe -m scrapy crawl nro -a miasto=krakow -a max_stron=10
+[nro@krakow] Finished OK (exit 0)
+
+[migrate] Backfilling NULL cena_za_m2 records…
+[migrate] ERROR: connection to server at "localhost" (::1), port 5432 failed: fe_sendauth: no password supplied
+
+
+[migrate] Backfilling dzielnica for NRO from adres_pelny…
+[migrate] dzielnica ERROR: connection to server at "localhost" (::1), port 5432 failed: fe_sendauth: no password supplied
+
+
+[mark_sold] Updating gone listings…
+[mark_sold] Done.
+
+────────────────────────────────────────────────────────────
+Run finished at 2026-05-09 21:52:18  (took 0:03:33.046799)
+Spiders run   : 3
+Successful    : 3
+Failed        : 0
+────────────────────────────────────────────────────────────
+

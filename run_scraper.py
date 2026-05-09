@@ -18,7 +18,7 @@ from pathlib import Path
 # CONFIG — edit these to change what gets scraped
 # ──────────────────────────────────────────────────────────────────────────────
 CITIES    = ["krakow"]
-MAX_PAGES = 10
+MAX_PAGES = 999   # scrapuj wszystkie strony (spider sam zatrzyma się gdy nie ma więcej)
 SPIDERS   = ["otodom", "gratka", "nro"]
 # ──────────────────────────────────────────────────────────────────────────────
 
@@ -85,6 +85,33 @@ def main():
                 if not ok:
                     failed.append(f"{spider}@{city}")
 
+        # ── Przywróć oferty Otodom, które były gone przez blokadę (jednorazowo) ─
+        log("\n[restore_otodom] Przywracanie ofert otodom oznaczonych gone przez blokadę…", lf)
+        try:
+            from ScraperMieszkan.utils import get_db_connection
+            conn_r = get_db_connection()
+            cur_r  = conn_r.cursor()
+            # Jeśli otodom działał podczas tego uruchomienia (last_seen zaktualizowane),
+            # lub przywracamy oferty widziane w ciągu ostatnich 7 dni przed oznaczeniem gone.
+            # Bezpieczne: następny run mark_sold i tak sprawdzi last_seen.
+            cur_r.execute("""
+                UPDATE auctions
+                SET status = 'active'
+                WHERE portal = 'otodom'
+                  AND status = 'gone'
+                  AND last_seen >= NOW() - INTERVAL '14 days'
+            """)
+            restored = cur_r.rowcount
+            conn_r.commit()
+            cur_r.close()
+            conn_r.close()
+            if restored > 0:
+                log(f"[restore_otodom] Przywrócono {restored} ofert otodom do active.", lf)
+            else:
+                log("[restore_otodom] Brak ofert do przywrócenia.", lf)
+        except Exception as exc:
+            log(f"[restore_otodom] ERROR: {exc}", lf)
+
         # ── Backfill missing cena_za_m2 in price_history ─────────────────────
         log("\n[migrate] Backfilling NULL cena_za_m2 records…", lf)
         try:
@@ -109,6 +136,50 @@ def main():
             log(f"[migrate] Updated {updated} rows.", lf)
         except Exception as exc:
             log(f"[migrate] ERROR: {exc}", lf)
+
+        # ── Backfill dzielnica dla NRO z adres_pelny ─────────────────────────
+        log("\n[migrate] Backfilling dzielnica for NRO from adres_pelny…", lf)
+        try:
+            from ScraperMieszkan.utils import get_db_connection
+            conn_d = get_db_connection()
+            cur_d  = conn_d.cursor()
+            # NRO zapisuje location jako "Kraków, Grzegórzki" lub "Małopolskie, Kraków, Grzegórzki".
+            # Ostatni człon po przecinku to dzielnica — pod warunkiem że to nie jest nazwa miasta.
+            MIASTA_SQL = ("'Kraków','Warszawa','Wrocław','Gdańsk','Poznań',"
+                          "'Łódź','Katowice','Szczecin','Bydgoszcz','Lublin',"
+                          "'Białystok','Rzeszów','Toruń','Kraków','Kielce'")
+            cur_d.execute(f"""
+                UPDATE auctions
+                SET dzielnica = extracted
+                FROM (
+                    SELECT auction_id,
+                           TRIM(REGEXP_REPLACE(adres_pelny, '^.*,\\s*', '')) AS extracted
+                    FROM   auctions
+                    WHERE  portal      = 'nro'
+                      AND  (dzielnica IS NULL OR dzielnica = '')
+                      AND  adres_pelny IS NOT NULL
+                      AND  adres_pelny LIKE '%,%'
+                ) sub
+                WHERE  auctions.auction_id = sub.auction_id
+                  AND  sub.extracted NOT IN ({MIASTA_SQL})
+                  AND  sub.extracted != ''
+            """)
+            nro_updated = cur_d.rowcount
+            # ── Wyczyść błędne dzielnice Gratki (np. "Kraków" zamiast prawdziwej dzielnicy)
+            cur_d.execute(f"""
+                UPDATE auctions
+                SET dzielnica = NULL
+                WHERE portal = 'gratka'
+                  AND dzielnica IN ({MIASTA_SQL})
+            """)
+            gratka_cleared = cur_d.rowcount
+            conn_d.commit()
+            cur_d.close()
+            conn_d.close()
+            log(f"[migrate] NRO dzielnica backfilled: {nro_updated} rows. "
+                f"Gratka city-as-dzielnica cleared: {gratka_cleared} rows.", lf)
+        except Exception as exc:
+            log(f"[migrate] dzielnica ERROR: {exc}", lf)
 
         # ── Mark gone listings ────────────────────────────────────────────────
         log("\n[mark_sold] Updating gone listings…", lf)

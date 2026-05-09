@@ -58,6 +58,17 @@ class NroSpider(scrapy.Spider):
             location_parts = offer.css("p.province *::text").getall()
             location = ", ".join(p.strip().rstrip(",") for p in location_parts if p.strip())
 
+            # Wyciągnij dzielnicę: ostatni człon lokalizacji, jeśli to nie jest miasto ani województwo
+            MIASTA_NAZWY = {"Kraków", "Warszawa", "Wrocław", "Gdańsk", "Poznań", "Łódź", "Katowice"}
+            WOJEW = {"małopolskie", "mazowieckie", "dolnośląskie", "pomorskie", "wielkopolskie",
+                     "śląskie", "lubelskie", "podkarpackie", "łódzkie", "kujawsko-pomorskie"}
+            SEPARATORY = {">", "›", "|", ",", "/"}
+            clean_parts = [p.strip().rstrip(",") for p in location_parts
+                           if p.strip() and p.strip() not in SEPARATORY]
+            meaningful = [p for p in clean_parts
+                          if p not in MIASTA_NAZWY and p.lower() not in WOJEW]
+            dzielnica_nro = meaningful[-1] if meaningful else ""
+
             # Rynek — z div.abap__box
             rynek_raw = offer.css("p.abap span::text").get("").strip().lower()
             if "pierwotny" in rynek_raw:
@@ -117,6 +128,8 @@ class NroSpider(scrapy.Spider):
             loader.add_value("adres_pelny", location)
             MIASTA = {"krakow": "Kraków", "warszawa": "Warszawa", "wroclaw": "Wrocław", "gdansk": "Gdańsk", "poznan": "Poznań"}
             loader.add_value("miasto", MIASTA.get(getattr(self, "miasto", "krakow"), getattr(self, "miasto", "krakow").capitalize()))
+            if dzielnica_nro:
+                loader.add_value("dzielnica", dzielnica_nro)
             loader.add_value("zdjecie_url", zdjecie)
             loader.add_value("timestamp", now)
             loader.add_value("last_seen", now)

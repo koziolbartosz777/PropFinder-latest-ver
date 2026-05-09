@@ -345,12 +345,13 @@
     <div class="method-note">
       <strong>Jak to działa?</strong> Porównujemy każdą ofertę do ofert z tej samej dzielnicy,
       tej samej liczby pokoi i metrażu ±20%.
-      Wynik "Tańsza niż X% podobnych" oznacza, że X% ofert w tej grupie ma wyższą cenę za m².
-      <strong>Mediana jest odporna na outlier'y</strong> — penthouse'y nie zaburzają oceny kawalerek.
-      Pokazujemy tylko oferty, gdzie &ge;60% podobnych jest droższych i jest co najmniej 3 obiekty porównawcze.
+      <strong>pct_tanszych</strong> = % podobnych ofert <em>tańszych</em> od tej —
+      niski wynik oznacza, że jesteśmy tańsi od większości podobnych.
+      Pokazujemy tylko oferty tańsze niż co najmniej 60% podobnych (min. 3 obiekty porównawcze).
     </div>
 
-    {% set shown = best_value | selectattr('pct_tanszych', 'ge', 60) | list %}
+    {# pct_tanszych NISKI = tania oferta → filtrujemy <= 40 (tańsza niż ≥60% podobnych) #}
+    {% set shown = best_value | selectattr('pct_tanszych', 'le', 40) | list %}
     {% if shown %}
     <div class="bv-grid">
       {% for m in shown %}
@@ -377,7 +378,7 @@
               <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
                 <polyline points="20 6 9 17 4 12"/>
               </svg>
-              Tańsza niż {{ m.pct_tanszych | int }}% podobnych
+              Tańsza niż {{ 100 - (m.pct_tanszych | int) }}% podobnych
             </div>
           </div>
 

@@ -336,7 +336,7 @@ def analiza():
             WHERE a.status = 'active'
               AND ph.cena_za_m2 IS NOT NULL
               AND score.lacznie_blizniatow >= 3
-            ORDER BY pct_tanszych DESC NULLS LAST
+            ORDER BY pct_tanszych ASC NULLS LAST
             LIMIT 20
         """)
         best_value = cur.fetchall()

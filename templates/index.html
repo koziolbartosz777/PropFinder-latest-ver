@@ -467,18 +467,24 @@
     {% endmacro %}
 
     {% macro score_badge(m) %}
-      {%- if m.lacznie_blizniatow and m.lacznie_blizniatow >= 3 and m.pct_tanszych is not none -%}
+      {#
+        pct_tanszych = % podobnych ofert TANSZYCH niz ta oferta
+          NISKI pct -> malo tanszych -> MY jestesmy tani  -> zielony
+          WYSOKI pct -> duzo tanszych -> MY jestesmy drodzy -> czerwony
+        Nie pokazujemy badge gdy brak ceny (cena do uzgodnienia).
+      #}
+      {%- if m.cena_za_m2 and m.lacznie_blizniatow and m.lacznie_blizniatow >= 3 and m.pct_tanszych is not none -%}
         {%- set pct = m.pct_tanszych | int -%}
-        {%- if pct >= 80 -%}
-          <span class="bpct-badge bpct-80">Tańsza niż {{ pct }}% podobnych</span>
-        {%- elif pct >= 60 -%}
-          <span class="bpct-badge bpct-60">Tańsza niż {{ pct }}% podobnych</span>
-        {%- elif pct >= 40 -%}
-          <span class="bpct-badge bpct-40">Blisko średniej rynku ({{ pct }}%)</span>
-        {%- elif pct >= 20 -%}
-          <span class="bpct-badge bpct-20">Droższa niż {{ 100 - pct }}% podobnych</span>
+        {%- if pct <= 20 -%}
+          <span class="bpct-badge bpct-80">Tańsza niż {{ 100 - pct }}% podobnych</span>
+        {%- elif pct <= 40 -%}
+          <span class="bpct-badge bpct-60">Tańsza niż {{ 100 - pct }}% podobnych</span>
+        {%- elif pct <= 60 -%}
+          <span class="bpct-badge bpct-40">Blisko średniej rynku</span>
+        {%- elif pct <= 80 -%}
+          <span class="bpct-badge bpct-20">Droższa niż {{ pct }}% podobnych</span>
         {%- else -%}
-          <span class="bpct-badge bpct-0">Droższa niż {{ 100 - pct }}% podobnych</span>
+          <span class="bpct-badge bpct-0">Droższa niż {{ pct }}% podobnych</span>
         {%- endif -%}
       {%- endif -%}
     {% endmacro %}

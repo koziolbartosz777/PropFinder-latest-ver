@@ -11,6 +11,8 @@ from pathlib import Path
 load_dotenv(Path(__file__).parent / ".env")
 app = Flask(__name__)
 
+from ScraperMieszkan.districts import sql_case as _district_sql_case
+
 
 def to_json_safe(rows):
     """Convert psycopg2 RealDictRow list to JSON-serialisable plain dicts."""
@@ -241,34 +243,41 @@ def analiza():
         conn = get_db()
         cur  = conn.cursor()
 
-        # a) Enhanced district stats with median
-        cur.execute("""
-            SELECT a.dzielnica,
-                   COUNT(*) as liczba,
-                   ROUND(PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY ph.cena_za_m2)) as mediana_m2,
-                   ROUND(AVG(ph.cena_za_m2)) as avg_m2,
-                   ROUND(AVG(a.metraz), 1) as avg_metraz,
-                   ROUND(AVG(EXTRACT(EPOCH FROM (NOW() - a.first_seen))/86400)) as avg_dni_na_rynku
-            FROM auctions a
-            LEFT JOIN LATERAL (
-                SELECT cena_pln,
-                       COALESCE(cena_za_m2,
-                         CASE WHEN cena_pln IS NOT NULL
-                                   AND a.metraz IS NOT NULL AND a.metraz > 0
-                              THEN ROUND(cena_pln::numeric / a.metraz)
-                         END
-                       ) AS cena_za_m2
-                FROM price_history
-                WHERE auction_id = a.auction_id
-                ORDER BY timestamp DESC LIMIT 1
-            ) ph ON true
-            WHERE a.status = 'active'
-              AND a.dzielnica IS NOT NULL AND a.dzielnica != ''
-              AND ph.cena_za_m2 IS NOT NULL
-            GROUP BY a.dzielnica
+        # a) Enhanced district stats with median — z normalizacją nazw dzielnic
+        cur.execute(f"""
+            WITH norm AS (
+                SELECT
+                    ({_district_sql_case("a.dzielnica")}) AS dzielnica,
+                    a.metraz,
+                    a.first_seen,
+                    ph.cena_za_m2
+                FROM auctions a
+                LEFT JOIN LATERAL (
+                    SELECT COALESCE(cena_za_m2,
+                             CASE WHEN cena_pln IS NOT NULL
+                                       AND a.metraz IS NOT NULL AND a.metraz > 0
+                                  THEN ROUND(cena_pln::numeric / a.metraz)
+                             END
+                           ) AS cena_za_m2
+                    FROM price_history
+                    WHERE auction_id = a.auction_id
+                    ORDER BY timestamp DESC LIMIT 1
+                ) ph ON true
+                WHERE a.status = 'active'
+                  AND a.dzielnica IS NOT NULL AND a.dzielnica != ''
+                  AND ph.cena_za_m2 IS NOT NULL
+            )
+            SELECT dzielnica,
+                   COUNT(*) AS liczba,
+                   ROUND(PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY cena_za_m2)) AS mediana_m2,
+                   ROUND(AVG(cena_za_m2))                                          AS avg_m2,
+                   ROUND(AVG(metraz), 1)                                           AS avg_metraz,
+                   ROUND(AVG(EXTRACT(EPOCH FROM (NOW() - first_seen))/86400))      AS avg_dni_na_rynku
+            FROM norm
+            WHERE dzielnica IS NOT NULL
+            GROUP BY dzielnica
             HAVING COUNT(*) >= 3
-            ORDER BY mediana_m2 DESC NULLS LAST
-            LIMIT 20
+            ORDER BY liczba DESC, mediana_m2 DESC NULLS LAST
         """)
         dzielnice = cur.fetchall()
 
@@ -409,34 +418,41 @@ def analiza():
         """)
         obniżki = cur.fetchall()
 
-        # f) Trendy cenowe miesięcznie — top 6 dzielnic wg liczby ofert
-        cur.execute("""
-            WITH top_dist AS (
-                SELECT dzielnica
+        # f) Trendy cenowe miesięcznie — top 6 dzielnic wg liczby ofert (z normalizacją)
+        cur.execute(f"""
+            WITH norm_auctions AS (
+                SELECT auction_id,
+                       ({_district_sql_case("dzielnica")}) AS dzielnica,
+                       metraz
                 FROM auctions
                 WHERE status = 'active'
                   AND dzielnica IS NOT NULL AND dzielnica != ''
+            ),
+            top_dist AS (
+                SELECT dzielnica
+                FROM norm_auctions
+                WHERE dzielnica IS NOT NULL
                 GROUP BY dzielnica
                 ORDER BY COUNT(*) DESC
                 LIMIT 6
             )
             SELECT
                 TO_CHAR(DATE_TRUNC('month', ph.timestamp), 'YYYY-MM') AS miesiac,
-                a.dzielnica,
+                na.dzielnica,
                 ROUND(PERCENTILE_CONT(0.5) WITHIN GROUP (
                     ORDER BY COALESCE(ph.cena_za_m2,
                         CASE WHEN ph.cena_pln IS NOT NULL
-                                  AND a.metraz IS NOT NULL AND a.metraz > 0
-                             THEN ROUND(ph.cena_pln::numeric / a.metraz) END)
+                                  AND na.metraz IS NOT NULL AND na.metraz > 0
+                             THEN ROUND(ph.cena_pln::numeric / na.metraz) END)
                 )) AS mediana_m2,
                 COUNT(*) AS liczba
             FROM price_history ph
-            JOIN auctions a  ON ph.auction_id = a.auction_id
-            JOIN top_dist td ON a.dzielnica   = td.dzielnica
+            JOIN norm_auctions na ON ph.auction_id = na.auction_id
+            JOIN top_dist td      ON na.dzielnica  = td.dzielnica
             WHERE ph.timestamp >= NOW() - INTERVAL '12 months'
               AND (ph.cena_za_m2 IS NOT NULL
                    OR (ph.cena_pln IS NOT NULL
-                       AND a.metraz IS NOT NULL AND a.metraz > 0))
+                       AND na.metraz IS NOT NULL AND na.metraz > 0))
             GROUP BY 1, 2
             HAVING COUNT(*) >= 3
             ORDER BY 1, 2

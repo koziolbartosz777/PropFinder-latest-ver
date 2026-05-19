@@ -81,3 +81,406 @@ Successful    : 3
 Failed        : 0
 ────────────────────────────────────────────────────────────
 
+
+============================================================
+PropAgent scraper run started at 2026-05-10 21:17:50
+============================================================
+[otodom@krakow] Starting: C:\Users\bkozi\AppData\Local\Programs\Python\Python312\pythonw.exe -m scrapy crawl otodom -a miasto=krakow -a max_stron=999
+[otodom@krakow] Finished OK (exit 0)
+[gratka@krakow] Starting: C:\Users\bkozi\AppData\Local\Programs\Python\Python312\pythonw.exe -m scrapy crawl gratka -a miasto=krakow -a max_stron=999
+[gratka@krakow] Finished OK (exit 0)
+[nro@krakow] Starting: C:\Users\bkozi\AppData\Local\Programs\Python\Python312\pythonw.exe -m scrapy crawl nro -a miasto=krakow -a max_stron=999
+[nro@krakow] Finished OK (exit 0)
+
+[restore_otodom] Przywracanie ofert otodom oznaczonych gone przez blokadę…
+[restore_otodom] ERROR: connection to server at "localhost" (::1), port 5432 failed: fe_sendauth: no password supplied
+
+
+[migrate] Backfilling NULL cena_za_m2 records…
+[migrate] ERROR: connection to server at "localhost" (::1), port 5432 failed: fe_sendauth: no password supplied
+
+
+[migrate] Backfilling dzielnica for NRO from adres_pelny…
+[migrate] dzielnica ERROR: connection to server at "localhost" (::1), port 5432 failed: fe_sendauth: no password supplied
+
+
+[mark_sold] Updating gone listings…
+[mark_sold] Done.
+
+────────────────────────────────────────────────────────────
+Run finished at 2026-05-10 22:07:53  (took 0:50:02.363924)
+Spiders run   : 3
+Successful    : 3
+Failed        : 0
+────────────────────────────────────────────────────────────
+
+
+============================================================
+PropAgent scraper run started at 2026-05-11 21:00:02
+============================================================
+[otodom@krakow] Starting: C:\Users\bkozi\AppData\Local\Programs\Python\Python312\pythonw.exe -m scrapy crawl otodom -a miasto=krakow -a max_stron=999
+[otodom@krakow] Finished OK (exit 0)
+[gratka@krakow] Starting: C:\Users\bkozi\AppData\Local\Programs\Python\Python312\pythonw.exe -m scrapy crawl gratka -a miasto=krakow -a max_stron=999
+[gratka@krakow] Finished OK (exit 0)
+[nro@krakow] Starting: C:\Users\bkozi\AppData\Local\Programs\Python\Python312\pythonw.exe -m scrapy crawl nro -a miasto=krakow -a max_stron=999
+[nro@krakow] Finished OK (exit 0)
+
+[restore_otodom] Przywracanie ofert otodom oznaczonych gone przez blokadę…
+[restore_otodom] ERROR: connection to server at "localhost" (::1), port 5432 failed: Connection refused (0x0000274D/10061)
+	Is the server running on that host and accepting TCP/IP connections?
+connection to server at "localhost" (127.0.0.1), port 5432 failed: Connection refused (0x0000274D/10061)
+	Is the server running on that host and accepting TCP/IP connections?
+
+
+[migrate] Backfilling NULL cena_za_m2 records…
+[migrate] ERROR: connection to server at "localhost" (::1), port 5432 failed: Connection refused (0x0000274D/10061)
+	Is the server running on that host and accepting TCP/IP connections?
+connection to server at "localhost" (127.0.0.1), port 5432 failed: Connection refused (0x0000274D/10061)
+	Is the server running on that host and accepting TCP/IP connections?
+
+
+[migrate] Backfilling dzielnica for NRO from adres_pelny…
+[migrate] dzielnica ERROR: connection to server at "localhost" (::1), port 5432 failed: Connection refused (0x0000274D/10061)
+	Is the server running on that host and accepting TCP/IP connections?
+connection to server at "localhost" (127.0.0.1), port 5432 failed: Connection refused (0x0000274D/10061)
+	Is the server running on that host and accepting TCP/IP connections?
+
+
+[mark_sold] Updating gone listings…
+[mark_sold] ERROR: connection to server at "localhost" (::1), port 5432 failed: Connection refused (0x0000274D/10061)
+	Is the server running on that host and accepting TCP/IP connections?
+connection to server at "localhost" (127.0.0.1), port 5432 failed: Connection refused (0x0000274D/10061)
+	Is the server running on that host and accepting TCP/IP connections?
+
+
+────────────────────────────────────────────────────────────
+Run finished at 2026-05-11 21:01:01  (took 0:00:58.928816)
+Spiders run   : 3
+Successful    : 3
+Failed        : 0
+────────────────────────────────────────────────────────────
+
+
+============================================================
+PropAgent scraper run started at 2026-05-12 03:04:07
+============================================================
+[otodom@krakow] Starting: C:\Users\bkozi\AppData\Local\Programs\Python\Python312\python.exe -m scrapy crawl otodom -a miasto=krakow -a max_stron=999
+[otodom@krakow] Finished OK (exit 0)
+[gratka@krakow] Starting: C:\Users\bkozi\AppData\Local\Programs\Python\Python312\python.exe -m scrapy crawl gratka -a miasto=krakow -a max_stron=999
+[gratka@krakow] Finished OK (exit 0)
+[nro@krakow] Starting: C:\Users\bkozi\AppData\Local\Programs\Python\Python312\python.exe -m scrapy crawl nro -a miasto=krakow -a max_stron=999
+[nro@krakow] Finished OK (exit 0)
+
+[restore_otodom] Przywracanie ofert otodom oznaczonych gone przez blokadę…
+[restore_otodom] ERROR: connection to server at "localhost" (::1), port 5432 failed: Connection refused (0x0000274D/10061)
+	Is the server running on that host and accepting TCP/IP connections?
+connection to server at "localhost" (127.0.0.1), port 5432 failed: Connection refused (0x0000274D/10061)
+	Is the server running on that host and accepting TCP/IP connections?
+
+
+[migrate] Backfilling NULL cena_za_m2 records…
+[migrate] ERROR: connection to server at "localhost" (::1), port 5432 failed: Connection refused (0x0000274D/10061)
+	Is the server running on that host and accepting TCP/IP connections?
+connection to server at "localhost" (127.0.0.1), port 5432 failed: Connection refused (0x0000274D/10061)
+	Is the server running on that host and accepting TCP/IP connections?
+
+
+[migrate] Backfilling dzielnica for NRO from adres_pelny…
+[migrate] dzielnica ERROR: connection to server at "localhost" (::1), port 5432 failed: Connection refused (0x0000274D/10061)
+	Is the server running on that host and accepting TCP/IP connections?
+connection to server at "localhost" (127.0.0.1), port 5432 failed: Connection refused (0x0000274D/10061)
+	Is the server running on that host and accepting TCP/IP connections?
+
+
+[mark_sold] Updating gone listings…
+[mark_sold] ERROR: connection to server at "localhost" (::1), port 5432 failed: Connection refused (0x0000274D/10061)
+	Is the server running on that host and accepting TCP/IP connections?
+connection to server at "localhost" (127.0.0.1), port 5432 failed: Connection refused (0x0000274D/10061)
+	Is the server running on that host and accepting TCP/IP connections?
+
+
+────────────────────────────────────────────────────────────
+Run finished at 2026-05-12 03:04:45  (took 0:00:38.307859)
+Spiders run   : 3
+Successful    : 3
+Failed        : 0
+────────────────────────────────────────────────────────────
+
+
+============================================================
+PropAgent scraper run started at 2026-05-12 03:26:52
+============================================================
+[otodom@krakow] Starting: C:\Users\bkozi\AppData\Local\Programs\Python\Python312\python.exe -m scrapy crawl otodom -a miasto=krakow -a max_stron=999
+[otodom@krakow] Finished OK (exit 0)
+[gratka@krakow] Starting: C:\Users\bkozi\AppData\Local\Programs\Python\Python312\python.exe -m scrapy crawl gratka -a miasto=krakow -a max_stron=999
+[gratka@krakow] Finished OK (exit 0)
+[nro@krakow] Starting: C:\Users\bkozi\AppData\Local\Programs\Python\Python312\python.exe -m scrapy crawl nro -a miasto=krakow -a max_stron=999
+[nro@krakow] Finished OK (exit 0)
+
+[restore_otodom] Przywracanie ofert otodom oznaczonych gone przez blokadę…
+[restore_otodom] ERROR: connection to server at "localhost" (::1), port 5432 failed: fe_sendauth: no password supplied
+
+
+[migrate] Backfilling NULL cena_za_m2 records…
+[migrate] ERROR: connection to server at "localhost" (::1), port 5432 failed: fe_sendauth: no password supplied
+
+
+[migrate] Backfilling dzielnica for NRO from adres_pelny…
+[migrate] dzielnica ERROR: connection to server at "localhost" (::1), port 5432 failed: fe_sendauth: no password supplied
+
+
+[mark_sold] Updating gone listings…
+[mark_sold] Done.
+
+────────────────────────────────────────────────────────────
+Run finished at 2026-05-12 04:01:37  (took 0:34:45.345123)
+Spiders run   : 3
+Successful    : 3
+Failed        : 0
+────────────────────────────────────────────────────────────
+
+
+============================================================
+PropAgent scraper run started at 2026-05-12 10:41:50
+============================================================
+[otodom@krakow] Starting: C:\Users\bkozi\AppData\Local\Programs\Python\Python312\python.exe -m scrapy crawl otodom -a miasto=krakow -a max_stron=999
+[otodom@krakow] Finished OK (exit 0)
+[gratka@krakow] Starting: C:\Users\bkozi\AppData\Local\Programs\Python\Python312\python.exe -m scrapy crawl gratka -a miasto=krakow -a max_stron=999
+[gratka@krakow] Finished OK (exit 0)
+[nro@krakow] Starting: C:\Users\bkozi\AppData\Local\Programs\Python\Python312\python.exe -m scrapy crawl nro -a miasto=krakow -a max_stron=999
+[nro@krakow] Finished OK (exit 0)
+
+[restore_otodom] Przywracanie ofert otodom oznaczonych gone przez blokadę…
+[restore_otodom] Brak ofert do przywrócenia.
+
+[migrate] Backfilling NULL cena_za_m2 records…
+[migrate] Updated 0 rows.
+
+[migrate] Backfilling dzielnica for NRO from adres_pelny…
+[migrate] NRO dzielnica backfilled: 11 rows. Gratka city-as-dzielnica cleared: 0 rows.
+
+[mark_sold] Updating gone listings…
+[mark_sold] Done.
+
+────────────────────────────────────────────────────────────
+Run finished at 2026-05-12 11:42:35  (took 1:00:45.041437)
+Spiders run   : 3
+Successful    : 3
+Failed        : 0
+────────────────────────────────────────────────────────────
+
+
+============================================================
+PropAgent scraper run started at 2026-05-13 21:00:02
+============================================================
+[otodom@krakow] Starting: C:\Users\bkozi\AppData\Local\Programs\Python\Python312\pythonw.exe -m scrapy crawl otodom -a miasto=krakow -a max_stron=999
+[otodom@krakow] Finished OK (exit 0)
+[gratka@krakow] Starting: C:\Users\bkozi\AppData\Local\Programs\Python\Python312\pythonw.exe -m scrapy crawl gratka -a miasto=krakow -a max_stron=999
+[gratka@krakow] Finished OK (exit 0)
+[nro@krakow] Starting: C:\Users\bkozi\AppData\Local\Programs\Python\Python312\pythonw.exe -m scrapy crawl nro -a miasto=krakow -a max_stron=999
+[nro@krakow] Finished OK (exit 0)
+
+[restore_otodom] Przywracanie ofert otodom oznaczonych gone przez blokadę…
+[restore_otodom] ERROR: connection to server at "localhost" (::1), port 5432 failed: Connection refused (0x0000274D/10061)
+	Is the server running on that host and accepting TCP/IP connections?
+connection to server at "localhost" (127.0.0.1), port 5432 failed: Connection refused (0x0000274D/10061)
+	Is the server running on that host and accepting TCP/IP connections?
+
+
+[migrate] Backfilling NULL cena_za_m2 records…
+[migrate] ERROR: connection to server at "localhost" (::1), port 5432 failed: Connection refused (0x0000274D/10061)
+	Is the server running on that host and accepting TCP/IP connections?
+connection to server at "localhost" (127.0.0.1), port 5432 failed: Connection refused (0x0000274D/10061)
+	Is the server running on that host and accepting TCP/IP connections?
+
+
+[migrate] Backfilling dzielnica for NRO from adres_pelny…
+[migrate] dzielnica ERROR: connection to server at "localhost" (::1), port 5432 failed: Connection refused (0x0000274D/10061)
+	Is the server running on that host and accepting TCP/IP connections?
+connection to server at "localhost" (127.0.0.1), port 5432 failed: Connection refused (0x0000274D/10061)
+	Is the server running on that host and accepting TCP/IP connections?
+
+
+[mark_sold] Updating gone listings…
+[mark_sold] ERROR: connection to server at "localhost" (::1), port 5432 failed: Connection refused (0x0000274D/10061)
+	Is the server running on that host and accepting TCP/IP connections?
+connection to server at "localhost" (127.0.0.1), port 5432 failed: Connection refused (0x0000274D/10061)
+	Is the server running on that host and accepting TCP/IP connections?
+
+
+────────────────────────────────────────────────────────────
+Run finished at 2026-05-13 21:00:59  (took 0:00:57.245024)
+Spiders run   : 3
+Successful    : 3
+Failed        : 0
+────────────────────────────────────────────────────────────
+
+
+============================================================
+PropAgent scraper run started at 2026-05-14 21:00:02
+============================================================
+[otodom@krakow] Starting: C:\Users\bkozi\AppData\Local\Programs\Python\Python312\pythonw.exe -m scrapy crawl otodom -a miasto=krakow -a max_stron=999
+[otodom@krakow] Finished OK (exit 0)
+[gratka@krakow] Starting: C:\Users\bkozi\AppData\Local\Programs\Python\Python312\pythonw.exe -m scrapy crawl gratka -a miasto=krakow -a max_stron=999
+[gratka@krakow] Finished OK (exit 0)
+[nro@krakow] Starting: C:\Users\bkozi\AppData\Local\Programs\Python\Python312\pythonw.exe -m scrapy crawl nro -a miasto=krakow -a max_stron=999
+[nro@krakow] Finished OK (exit 0)
+
+[restore_otodom] Przywracanie ofert otodom oznaczonych gone przez blokadę…
+[restore_otodom] ERROR: connection to server at "localhost" (::1), port 5432 failed: Connection refused (0x0000274D/10061)
+	Is the server running on that host and accepting TCP/IP connections?
+connection to server at "localhost" (127.0.0.1), port 5432 failed: Connection refused (0x0000274D/10061)
+	Is the server running on that host and accepting TCP/IP connections?
+
+
+[migrate] Backfilling NULL cena_za_m2 records…
+[migrate] ERROR: connection to server at "localhost" (::1), port 5432 failed: Connection refused (0x0000274D/10061)
+	Is the server running on that host and accepting TCP/IP connections?
+connection to server at "localhost" (127.0.0.1), port 5432 failed: Connection refused (0x0000274D/10061)
+	Is the server running on that host and accepting TCP/IP connections?
+
+
+[migrate] Backfilling dzielnica for NRO from adres_pelny…
+[migrate] dzielnica ERROR: connection to server at "localhost" (::1), port 5432 failed: Connection refused (0x0000274D/10061)
+	Is the server running on that host and accepting TCP/IP connections?
+connection to server at "localhost" (127.0.0.1), port 5432 failed: Connection refused (0x0000274D/10061)
+	Is the server running on that host and accepting TCP/IP connections?
+
+
+[mark_sold] Updating gone listings…
+[mark_sold] ERROR: connection to server at "localhost" (::1), port 5432 failed: Connection refused (0x0000274D/10061)
+	Is the server running on that host and accepting TCP/IP connections?
+connection to server at "localhost" (127.0.0.1), port 5432 failed: Connection refused (0x0000274D/10061)
+	Is the server running on that host and accepting TCP/IP connections?
+
+
+────────────────────────────────────────────────────────────
+Run finished at 2026-05-14 21:00:58  (took 0:00:56.290319)
+Spiders run   : 3
+Successful    : 3
+Failed        : 0
+────────────────────────────────────────────────────────────
+
+
+============================================================
+PropAgent scraper run started at 2026-05-16 21:00:01
+============================================================
+[otodom@krakow] Starting: C:\Users\bkozi\AppData\Local\Programs\Python\Python312\pythonw.exe -m scrapy crawl otodom -a miasto=krakow -a max_stron=999
+[otodom@krakow] Finished OK (exit 0)
+[gratka@krakow] Starting: C:\Users\bkozi\AppData\Local\Programs\Python\Python312\pythonw.exe -m scrapy crawl gratka -a miasto=krakow -a max_stron=999
+[gratka@krakow] Finished OK (exit 0)
+[nro@krakow] Starting: C:\Users\bkozi\AppData\Local\Programs\Python\Python312\pythonw.exe -m scrapy crawl nro -a miasto=krakow -a max_stron=999
+[nro@krakow] Finished OK (exit 0)
+
+[restore_otodom] Przywracanie ofert otodom oznaczonych gone przez blokadę…
+[restore_otodom] ERROR: connection to server at "localhost" (::1), port 5432 failed: Connection refused (0x0000274D/10061)
+	Is the server running on that host and accepting TCP/IP connections?
+connection to server at "localhost" (127.0.0.1), port 5432 failed: Connection refused (0x0000274D/10061)
+	Is the server running on that host and accepting TCP/IP connections?
+
+
+[migrate] Backfilling NULL cena_za_m2 records…
+[migrate] ERROR: connection to server at "localhost" (::1), port 5432 failed: Connection refused (0x0000274D/10061)
+	Is the server running on that host and accepting TCP/IP connections?
+connection to server at "localhost" (127.0.0.1), port 5432 failed: Connection refused (0x0000274D/10061)
+	Is the server running on that host and accepting TCP/IP connections?
+
+
+[migrate] Backfilling dzielnica for NRO from adres_pelny…
+[migrate] dzielnica ERROR: connection to server at "localhost" (::1), port 5432 failed: Connection refused (0x0000274D/10061)
+	Is the server running on that host and accepting TCP/IP connections?
+connection to server at "localhost" (127.0.0.1), port 5432 failed: Connection refused (0x0000274D/10061)
+	Is the server running on that host and accepting TCP/IP connections?
+
+
+[mark_sold] Updating gone listings…
+[mark_sold] ERROR: connection to server at "localhost" (::1), port 5432 failed: Connection refused (0x0000274D/10061)
+	Is the server running on that host and accepting TCP/IP connections?
+connection to server at "localhost" (127.0.0.1), port 5432 failed: Connection refused (0x0000274D/10061)
+	Is the server running on that host and accepting TCP/IP connections?
+
+
+────────────────────────────────────────────────────────────
+Run finished at 2026-05-16 21:00:57  (took 0:00:55.404759)
+Spiders run   : 3
+Successful    : 3
+Failed        : 0
+────────────────────────────────────────────────────────────
+
+
+============================================================
+PropAgent scraper run started at 2026-05-17 22:19:15
+============================================================
+[otodom@krakow] Starting: C:\Users\bkozi\AppData\Local\Programs\Python\Python312\pythonw.exe -m scrapy crawl otodom -a miasto=krakow -a max_stron=999
+[otodom@krakow] Finished OK (exit 0)
+[gratka@krakow] Starting: C:\Users\bkozi\AppData\Local\Programs\Python\Python312\pythonw.exe -m scrapy crawl gratka -a miasto=krakow -a max_stron=999
+[gratka@krakow] Finished OK (exit 0)
+[nro@krakow] Starting: C:\Users\bkozi\AppData\Local\Programs\Python\Python312\pythonw.exe -m scrapy crawl nro -a miasto=krakow -a max_stron=999
+[nro@krakow] Finished OK (exit 0)
+
+[restore_otodom] Przywracanie ofert otodom oznaczonych gone przez blokadę…
+[restore_otodom] ERROR: connection to server at "localhost" (::1), port 5432 failed: Connection refused (0x0000274D/10061)
+	Is the server running on that host and accepting TCP/IP connections?
+connection to server at "localhost" (127.0.0.1), port 5432 failed: Connection refused (0x0000274D/10061)
+	Is the server running on that host and accepting TCP/IP connections?
+
+
+[migrate] Backfilling NULL cena_za_m2 records…
+[migrate] ERROR: connection to server at "localhost" (::1), port 5432 failed: Connection refused (0x0000274D/10061)
+	Is the server running on that host and accepting TCP/IP connections?
+connection to server at "localhost" (127.0.0.1), port 5432 failed: Connection refused (0x0000274D/10061)
+	Is the server running on that host and accepting TCP/IP connections?
+
+
+[migrate] Backfilling dzielnica for NRO from adres_pelny…
+[migrate] dzielnica ERROR: connection to server at "localhost" (::1), port 5432 failed: Connection refused (0x0000274D/10061)
+	Is the server running on that host and accepting TCP/IP connections?
+connection to server at "localhost" (127.0.0.1), port 5432 failed: Connection refused (0x0000274D/10061)
+	Is the server running on that host and accepting TCP/IP connections?
+
+
+[mark_sold] Updating gone listings…
+[mark_sold] ERROR: connection to server at "localhost" (::1), port 5432 failed: Connection refused (0x0000274D/10061)
+	Is the server running on that host and accepting TCP/IP connections?
+connection to server at "localhost" (127.0.0.1), port 5432 failed: Connection refused (0x0000274D/10061)
+	Is the server running on that host and accepting TCP/IP connections?
+
+
+────────────────────────────────────────────────────────────
+Run finished at 2026-05-18 17:14:51  (took 18:55:35.754477)
+Spiders run   : 3
+Successful    : 3
+Failed        : 0
+────────────────────────────────────────────────────────────
+
+
+============================================================
+PropAgent scraper run started at 2026-05-19 18:45:23
+============================================================
+[otodom@krakow] Starting: C:\Users\bkozi\AppData\Local\Programs\Python\Python312\python.exe -m scrapy crawl otodom -a miasto=krakow -a max_stron=999
+[otodom@krakow] Finished OK (exit 0)
+[gratka@krakow] Starting: C:\Users\bkozi\AppData\Local\Programs\Python\Python312\python.exe -m scrapy crawl gratka -a miasto=krakow -a max_stron=999
+[gratka@krakow] TIMED OUT after 3600 s
+[nro@krakow] Starting: C:\Users\bkozi\AppData\Local\Programs\Python\Python312\python.exe -m scrapy crawl nro -a miasto=krakow -a max_stron=999
+[nro@krakow] Finished OK (exit 0)
+
+[restore_otodom] Przywracanie ofert otodom oznaczonych gone przez blokadę…
+[restore_otodom] Brak ofert do przywrócenia.
+
+[migrate] Backfilling NULL cena_za_m2 records…
+[migrate] Updated 5 rows.
+
+[migrate] Backfilling dzielnica for NRO from adres_pelny…
+[migrate] NRO dzielnica backfilled: 24 rows. Gratka city-as-dzielnica cleared: 0 rows.
+
+[mark_sold] Updating gone listings…
+[mark_sold] Done.
+
+────────────────────────────────────────────────────────────
+Run finished at 2026-05-19 20:05:12  (took 1:19:49.722642)
+Spiders run   : 3
+Successful    : 2
+Failed        : 1
+Failed spiders: gratka@krakow
+────────────────────────────────────────────────────────────
+

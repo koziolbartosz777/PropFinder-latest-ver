@@ -25,7 +25,6 @@ class NroSpider(scrapy.Spider):
         if not offers:
             self.logger.warning(f"Brak ogłoszeń na stronie {strona} — {response.url}")
             return
-
         self.logger.info(f"Strona {strona}: znaleziono {len(offers)} ogłoszeń")
 
         for offer in offers:

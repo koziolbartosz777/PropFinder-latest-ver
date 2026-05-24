@@ -11,7 +11,11 @@ from pathlib import Path
 load_dotenv(Path(__file__).parent / ".env")
 app = Flask(__name__)
 
-from ScraperMieszkan.districts import sql_case as _district_sql_case
+from ScraperMieszkan.districts import (
+    sql_case as _district_sql_case,
+    sql_order_case as _district_order_case,
+    OFFICIAL_DISTRICTS,
+)
 
 
 def to_json_safe(rows):
@@ -274,11 +278,11 @@ def analiza():
                    ROUND(AVG(metraz), 1)                                           AS avg_metraz,
                    ROUND(AVG(EXTRACT(EPOCH FROM (NOW() - first_seen))/86400))      AS avg_dni_na_rynku
             FROM norm
-            WHERE dzielnica IS NOT NULL
+            WHERE dzielnica = ANY(%s)
             GROUP BY dzielnica
             HAVING COUNT(*) >= 3
-            ORDER BY liczba DESC, mediana_m2 DESC NULLS LAST
-        """)
+            ORDER BY {_district_order_case("dzielnica")}, dzielnica
+        """, (OFFICIAL_DISTRICTS,))
         dzielnice = cur.fetchall()
 
         # b) Price brackets
@@ -418,7 +422,7 @@ def analiza():
         """)
         obniżki = cur.fetchall()
 
-        # f) Trendy cenowe miesięcznie — top 6 dzielnic wg liczby ofert (z normalizacją)
+        # f) Trendy cenowe miesięcznie — top 6 oficjalnych dzielnic wg liczby ofert (z normalizacją)
         cur.execute(f"""
             WITH norm_auctions AS (
                 SELECT auction_id,
@@ -431,7 +435,7 @@ def analiza():
             top_dist AS (
                 SELECT dzielnica
                 FROM norm_auctions
-                WHERE dzielnica IS NOT NULL
+                WHERE dzielnica = ANY(%s)
                 GROUP BY dzielnica
                 ORDER BY COUNT(*) DESC
                 LIMIT 6
@@ -456,7 +460,7 @@ def analiza():
             GROUP BY 1, 2
             HAVING COUNT(*) >= 3
             ORDER BY 1, 2
-        """)
+        """, (OFFICIAL_DISTRICTS,))
         trendy = cur.fetchall()
 
         # g) Freshness

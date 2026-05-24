@@ -122,24 +122,32 @@ class GratkaSpider(scrapy.Spider):
     def parse_details(self, response, item):
         loader = FlatLoader(item=item, response=response)
 
-        # Parametry szczegółowe
-        for row in response.css("li.parameters__item, .property-features__item"):
-            label = row.css("span:first-child::text, dt::text").get("").strip().lower()
-            value = row.css("span:last-child::text, dd::text").get("").strip()
+        # ── Nowa struktura Gratki: .information-table__row ────────────────
+        for row in response.css(".information-table__row"):
+            label = row.css("[data-cy='informationTableLabel']::text").get("").strip().lower()
+            value = row.css("[data-cy='itemValue']::text").get("").strip()
             if not label or not value:
                 continue
-            if "powierzchnia" in label:
+            if "pow." in label or "powierzchnia" in label:
                 loader.add_value("metraz", _parse_number(value))
-            elif "pokoi" in label or "pokoje" in label:
+            elif "liczba pokoi" in label or "pokoi" in label:
                 loader.add_value("pokoje", _parse_number(value))
             elif "piętro" in label and "liczba" not in label:
-                loader.add_value("pietro", value)
+                _load_pietro(loader, value)
             elif "liczba pięter" in label:
                 loader.add_value("liczba_pieter", _parse_number(value))
             elif "rok budowy" in label:
                 loader.add_value("rok_budowy", _parse_number(value))
             elif "rynek" in label:
                 loader.add_value("rynek", value)
+
+        # ── Piętro z wyróżnionych parametrów (fallback) ───────────────────
+        floor_el = response.css(".details-highlighted-parameters__item--floor")
+        if floor_el:
+            texts = [t.strip() for t in floor_el.css("::text").getall()
+                     if t.strip() and t.strip().lower() != "piętro"]
+            if texts:
+                _load_pietro(loader, texts[0])
 
         # Lokalizacja ze strony szczegółów
         ulica = response.css("span[data-cy='locationRowTitle']::text").get("").strip()
@@ -201,6 +209,17 @@ class GratkaSpider(scrapy.Spider):
             loader.add_value("zdjecie_url", zdjecia[0])
 
         yield loader.load_item()
+
+
+def _load_pietro(loader, value: str):
+    """Parsuje piętro z wartości np. '1 z 5', '1/5', 'parter', '10', 'D'."""
+    v = value.strip().lower()
+    if v in ("parter", "przyziemie", "0"):
+        loader.add_value("pietro", "0")
+    else:
+        m = re.search(r"\d+", v)
+        if m:
+            loader.add_value("pietro", m.group())
 
 
 def _parse_price(tekst):

@@ -132,6 +132,58 @@ DISTRICT_ALIASES: dict[str, str | None] = {
     "Bronowice Małe":               "Bronowice",
     "Bronowice Wielkie":            "Bronowice",
 
+    # ── Dodatkowe osiedla → oficjalna dzielnica ───────────────────────────
+    "Albertyńskie":                 "Dębniki",
+    "Os. Albertyńskie":             "Dębniki",
+    "Czarna Wieś":                  "Krowodrza",
+    "Czerwone Maki":                "Dębniki",
+    "Kliny Zaciście":               "Swoszowice",
+    "Kurdwanów Nowy":               "Podgórze Duchackie",
+    "Łobzów":                       "Krowodrza",
+    "Mały Płaszów":                 "Podgórze",
+    "Mateczny":                     "Dębniki",
+    "Mydlniki":                     "Krowodrza",
+    "Nowa Wieś":                    "Krowodrza",
+    "Nowy Świat":                   "Stare Miasto",
+    "Os. Bohaterów Września":       "Nowa Huta",
+    "Os. Centrum C":                "Nowa Huta",
+    "Os. Centrum D":                "Nowa Huta",
+    "Os. Dywizjonu 303":            "Nowa Huta",
+    "Os. Hutnicze":                 "Nowa Huta",
+    "Os. Kazimierzowskie":          "Nowa Huta",
+    "Os. Kombatantów":              "Nowa Huta",
+    "Os. Na Lotnisku":              "Czyżyny",
+    "Os. Oświecenia":               "Wzgórza Krzesławickie",
+    "Os. Podlesie":                 "Swoszowice",
+    "Os. Podwawelskie":             "Stare Miasto",
+    "Os. Przy Arce":                "Nowa Huta",
+    "Os. Szkolne":                  "Bieńczyce",
+    "Os. Tysiąclecia":              "Bieńczyce",
+    "Os. Złotego Wieku":            "Nowa Huta",
+    "Przewóz":                      "Podgórze",
+    "Rżąka":                        "Łagiewniki-Borek Fałęcki",
+    "Teatralne":                    "Nowa Huta",
+    "Tonie":                        "Wzgórza Krzesławickie",
+    "Ugorek":                       "Nowa Huta",
+    "Witkowice":                    "Wzgórza Krzesławickie",
+    "Wola Duchacka":                "Podgórze Duchackie",
+    "Zakrzówek":                    "Dębniki",
+    "Żabiniec":                     "Prądnik Biały",
+    "Żabiniec Kraków":              "Prądnik Biały",
+    "Zielone":                      "Bieżanów-Prokocim",
+    "Kolorowe":                     "Bieżanów-Prokocim",
+    "Kalinowe":                     "Bieżanów-Prokocim",
+    "Łęg":                          "Podgórze",
+    "Mochnaniec":                   "Swoszowice",
+    "Opatkowice":                   "Swoszowice",
+    "Wróblowice":                   "Swoszowice",
+    "Olsza":                        "Prądnik Czerwony",
+    "Wandy":                        "Nowa Huta",
+    "Piaski Nowe":                  "Bieżanów-Prokocim",
+    "Kurdwanów":                    "Podgórze Duchackie",
+    "Kliny Borkowskie":             "Łagiewniki-Borek Fałęcki",
+    "Rybitwy":                      "Podgórze",
+
     # ── Szum — nie-krakowskie / do wykluczenia ────────────────────────────
     "małopolskie":                  None,
     "Wieliczka":                    None,
@@ -144,11 +196,17 @@ DISTRICT_ALIASES: dict[str, str | None] = {
     "Branice":                      None,
     "Modlnica":                     None,
     "Czarnochowice":                None,
+    "Michałowice":                  None,
+    "Krzyszkowice":                 None,
+    "Libertów":                     None,
 }
 
 
 import re as _re
 _ROMAN_PREFIX = _re.compile(r"^Dzielnica [IVXLC]+ ")
+
+# Numer porządkowy oficjalnych dzielnic (do sortowania)
+_OFFICIAL_ORDER: dict[str, int] = {d: i + 1 for i, d in enumerate(OFFICIAL_DISTRICTS)}
 
 
 def normalize(name: str | None) -> str | None:
@@ -201,9 +259,26 @@ def sql_case(col: str = "dzielnica") -> str:
     # Dynamiczne reguły (stosowane gdy brak jawnego aliasu)
     lines.append(f"  WHEN {col} ~ '^Dzielnica [IVXLC]+ '")
     lines.append(f"    THEN REGEXP_REPLACE({col}, '^Dzielnica [IVXLC]+ ', '')")
-    lines.append(f"  WHEN {col} LIKE '% Kraków'")
+    lines.append(f"  WHEN {col} LIKE '%% Kraków'")
     lines.append(f"    THEN TRIM(REGEXP_REPLACE({col}, ' Kraków$', ''))")
 
     lines.append(f"  ELSE {col}")
+    lines.append("END")
+    return "\n".join(lines)
+
+
+def sql_order_case(col: str = "dzielnica") -> str:
+    """
+    Generuje SQL CASE przypisujący numer porządkowy oficjalnej dzielnicy (1–18).
+    Nieoficjalne sub-dzielnice dostają 99 → lądują na końcu posortowane alfabetycznie.
+
+    Użycie w ORDER BY:
+        ORDER BY {sql_order_case('dzielnica')}, dzielnica
+    """
+    lines = ["CASE"]
+    for district, order_num in _OFFICIAL_ORDER.items():
+        escaped = district.replace("'", "''")
+        lines.append(f"  WHEN {col} = '{escaped}' THEN {order_num}")
+    lines.append(f"  ELSE 99")
     lines.append("END")
     return "\n".join(lines)

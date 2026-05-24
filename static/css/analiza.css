@@ -169,6 +169,169 @@ tbody td:not(:first-child) { text-align: right; }
 .ph-close:hover { color: var(--dark); }
 .ph-empty { text-align: center; padding: 40px 20px; color: var(--muted); font-size: 13px; }
 
+/* ── NEW LISTINGS STAT CARDS ─────────────────────────────────────────────────── */
+.nowe-stats {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+  margin-bottom: 32px;
+}
+.nowe-card {
+  background: var(--white);
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow);
+  padding: 22px 26px;
+}
+.nowe-card--total {
+  border-color: #A7F3D0;
+  background: #F0FDF4;
+}
+.nowe-num {
+  font-size: 38px;
+  font-weight: 800;
+  color: var(--dark);
+  line-height: 1;
+  margin-bottom: 6px;
+  letter-spacing: -1.5px;
+}
+.nowe-card--total .nowe-num { color: #065F46; }
+.nowe-lbl { font-size: 12.5px; color: var(--muted); line-height: 1.4; }
+
+/* ── RANKING HEADER WITH TOGGLE BUTTON ──────────────────────────────────────── */
+.ranking-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+.btn-map-toggle {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 16px;
+  border-radius: 8px;
+  border: 1.5px solid var(--border);
+  background: var(--white);
+  font-family: 'Inter', sans-serif;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--mid);
+  cursor: pointer;
+  transition: all .15s;
+  white-space: nowrap;
+}
+.btn-map-toggle:hover, .btn-map-toggle.active {
+  border-color: #6366F1;
+  color: #6366F1;
+  background: #EEF2FF;
+}
+
+/* ── HEAT MAP CONTAINER ──────────────────────────────────────────────────────── */
+#district-map {
+  height: 460px;
+  border-radius: var(--radius);
+  overflow: hidden;
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow);
+}
+.map-loading {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 36px;
+  background: var(--white);
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  font-size: 13px;
+  color: var(--muted);
+  margin-bottom: 8px;
+}
+.map-spinner {
+  width: 22px; height: 22px;
+  border: 3px solid var(--border);
+  border-top-color: #6366F1;
+  border-radius: 50%;
+  animation: spin .75s linear infinite;
+  flex-shrink: 0;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+.map-error {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 20px 24px;
+  background: #FEF2F2;
+  border-radius: var(--radius);
+  border: 1px solid #FECACA;
+  font-size: 13px;
+  color: #991B1B;
+  flex-wrap: wrap;
+  margin-top: 8px;
+}
+.map-error button {
+  padding: 5px 12px;
+  border-radius: 6px;
+  border: 1px solid #FECACA;
+  background: white;
+  color: #991B1B;
+  cursor: pointer;
+  font-family: 'Inter', sans-serif;
+  font-size: 12px;
+  font-weight: 600;
+}
+.map-note {
+  font-size: 11.5px;
+  color: var(--muted);
+  margin-top: 8px;
+  line-height: 1.5;
+}
+
+/* ── LEAFLET LEGEND ──────────────────────────────────────────────────────────── */
+.map-legend {
+  background: rgba(255,255,255,0.95);
+  border-radius: 8px;
+  padding: 10px 14px;
+  box-shadow: 0 2px 8px rgba(0,0,0,.15);
+  font-family: 'Inter', sans-serif;
+  font-size: 12px;
+  min-width: 145px;
+  backdrop-filter: blur(4px);
+}
+.legend-title {
+  font-weight: 700;
+  font-size: 10px;
+  letter-spacing: .07em;
+  text-transform: uppercase;
+  color: #888;
+  margin-bottom: 8px;
+}
+.legend-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 5px;
+  font-size: 11.5px;
+  color: var(--mid);
+}
+.legend-swatch {
+  width: 14px; height: 14px;
+  border-radius: 3px;
+  flex-shrink: 0;
+  border: 1px solid rgba(0,0,0,.08);
+}
+
+/* ── RESPONSIVE ──────────────────────────────────────────────────────────────── */
+@media (max-width: 700px) {
+  .nowe-stats { grid-template-columns: 1fr; }
+  .ranking-header { flex-direction: column; align-items: stretch; }
+  .btn-map-toggle { width: 100%; justify-content: center; }
+  #district-map { height: 340px; }
+}
+
 /* ── HISTORIA CEN BUTTON ─────────────────────────────────────────────────────── */
 .btn-history {
   display: inline-flex; align-items: center; gap: 5px; margin-top: 6px;

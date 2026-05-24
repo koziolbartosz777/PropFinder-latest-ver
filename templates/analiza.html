@@ -7,6 +7,9 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/osmtogeojson@3.0.0-beta.5/osmtogeojson.js"></script>
   <link rel="stylesheet" href="{{ url_for('static', filename='css/analiza.css') }}">
   <style>
     /* page-specific overrides (if any) — main styles in static/css/analiza.css */
@@ -32,17 +35,40 @@
 <div class="page-wrap">
 
   <!-- ══════════════════════════════════════════════════════════════════════════
+       NOWE OFERTY — stat cards
+  ══════════════════════════════════════════════════════════════════════════ -->
+  <div class="nowe-stats">
+    <div class="nowe-card">
+      <div class="nowe-num">{{ nowe.nowe_7dni or 0 }}</div>
+      <div class="nowe-lbl">nowych ofert w ostatnich 7 dniach</div>
+    </div>
+    <div class="nowe-card">
+      <div class="nowe-num">{{ nowe.nowe_30dni or 0 }}</div>
+      <div class="nowe-lbl">nowych ofert w ostatnich 30 dniach</div>
+    </div>
+    <div class="nowe-card nowe-card--total">
+      <div class="nowe-num">{{ nowe.razem_aktywnych or 0 }}</div>
+      <div class="nowe-lbl">aktywnych ofert łącznie</div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════════════════════════════════
        SECTION 1 — Ranking dzielnic
   ══════════════════════════════════════════════════════════════════════════ -->
   <section class="section">
-    <div class="section-header">
-      <div class="section-title">Ranking dzielnic</div>
-      <div class="section-sub">
-        Posortowane według mediany ceny za m².
-        <strong>Mediana jest odporniejsza na luksusowe outlier'y niż średnia</strong>
-        — kilka penthouse'ów nie zaburzy oceny typowego mieszkania w dzielnicy.
-        Minimalna liczba ofert w dzielnicy: 3.
+    <div class="section-header ranking-header">
+      <div>
+        <div class="section-title">Ranking dzielnic</div>
+        <div class="section-sub">
+          Posortowane według oficjalnej numeracji dzielnic Krakowa.
+          <strong>Mediana jest odporniejsza na luksusowe outlier'y niż średnia</strong>
+          — kilka penthouse'ów nie zaburzy oceny typowego mieszkania w dzielnicy.
+          Minimalna liczba ofert w dzielnicy: 3.
+        </div>
       </div>
+      <button class="btn-map-toggle" id="map-toggle-btn" onclick="toggleDistrictMap()">
+        🗺️ Mapa cieplna
+      </button>
     </div>
 
     {% if dzielnice %}
@@ -97,6 +123,20 @@
       <p>Uruchom scrapy, żeby zebrać oferty.</p>
     </div>
     {% endif %}
+
+    <!-- MAPA CIEPLNA (domyślnie ukryta) -->
+    <div id="district-map-container" style="display:none; margin-top:16px;">
+      <div class="map-loading" id="map-loading">
+        <div class="map-spinner"></div>
+        <span>Pobieranie granic dzielnic z OpenStreetMap…</span>
+      </div>
+      <div id="district-map"></div>
+      <div class="map-error" id="map-error">
+        <span>⚠️ Nie udało się załadować mapy. Sprawdź połączenie z internetem.</span>
+        <button onclick="retryMap()">Spróbuj ponownie</button>
+      </div>
+      <p class="map-note">Granice dzielnic pobierane na żywo z OpenStreetMap · Najedź na dzielnicę, aby zobaczyć medianę ceny</p>
+    </div>
   </section>
 
 
@@ -366,11 +406,9 @@
 
 </div><!-- /.page-wrap -->
 <script>
-const TRENDY = {{ trendy_json | safe }};
+const TRENDY   = {{ trendy_json    | safe }};
+const DZIELNICE = {{ dzielnice_json | safe }};
 </script>
 <script src="{{ url_for('static', filename='js/analiza.js') }}"></script>
-<script>
-/* All chart & modal logic is in static/js/analiza.js */
-</script>
 </body>
 </html>

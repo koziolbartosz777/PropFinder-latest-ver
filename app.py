@@ -468,14 +468,30 @@ def analiza():
         row = cur.fetchone()
         ostatni_scraping = row["ostatni"] if row and row["ostatni"] else None
 
+        # h) New listings count — this week / this month / total active
+        cur.execute("""
+            SELECT
+                COUNT(*) FILTER (WHERE first_seen >= NOW() - INTERVAL '7 days')  AS nowe_7dni,
+                COUNT(*) FILTER (WHERE first_seen >= NOW() - INTERVAL '30 days') AS nowe_30dni,
+                COUNT(*) AS razem_aktywnych
+            FROM auctions
+            WHERE status = 'active'
+        """)
+        nowe_row = cur.fetchone()
+        nowe = dict(nowe_row) if nowe_row else {"nowe_7dni": 0, "nowe_30dni": 0, "razem_aktywnych": 0}
+
         conn.close()
     except Exception as e:
         import traceback; traceback.print_exc()
         dzielnice, portale, rozklad, best_value = [], [], [], []
         obniżki, trendy, ostatni_scraping = [], [], None
+        nowe = {"nowe_7dni": 0, "nowe_30dni": 0, "razem_aktywnych": 0}
 
+    _dzielnice_safe = to_json_safe(dzielnice)
     return render_template("analiza.html",
-        dzielnice=to_json_safe(dzielnice),
+        dzielnice=_dzielnice_safe,
+        dzielnice_json=json.dumps(_dzielnice_safe, ensure_ascii=False),
+        nowe=nowe,
         portale=to_json_safe(portale),
         rozklad=to_json_safe(rozklad),
         best_value=to_json_safe(best_value),

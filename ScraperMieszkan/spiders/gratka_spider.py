@@ -20,18 +20,19 @@ class GratkaSpider(scrapy.Spider):
     miasto = "krakow"
     max_stron = 10
 
-    def start_requests(self):
+    def start_requests(self):   #start - zwraca adresy URL do scrapowania
         self.parsed_ids = load_parsed_ids(self.logger)
         miasto = getattr(self, "miasto", "krakow").lower()
         url = f"https://gratka.pl/nieruchomosci/mieszkania/{miasto}"
         yield scrapy.Request(
             url,
-            callback=self.parse,
-            cb_kwargs={"strona": 1},
+            callback=self.parse, #pobrana strona przekazywana jest do metody parse
+            cb_kwargs={"strona": 1}, #callback keyword argumnets - wiemy na której stornie jesteśmy, potem next itd.
             headers={"Referer": "https://gratka.pl/"},
         )
 
-    def parse(self, response, strona):
+    #parse to obsługa strony z listą ogłoszeń
+    def parse(self, response, strona): #response to obiekt który Scarpy tu przekazuje
         offers = response.css("a.property-card")
 
         if not offers:
@@ -96,9 +97,9 @@ class GratkaSpider(scrapy.Spider):
             item = loader.load_item()
 
             if auction_id in self.parsed_ids:
-                yield item
+                yield item             # zwraca gotowe dane ogłoszenia
             else:
-                yield scrapy.Request(
+                yield scrapy.Request(   #wchodzi na stronę ze szczegółami
                     link,
                     callback=self.parse_details,
                     cb_kwargs={"item": item},
@@ -112,15 +113,15 @@ class GratkaSpider(scrapy.Spider):
         next_strona = strona + 1
         base = response.url.split("?")[0]
         next_url = f"{base}?page={next_strona}"
-        yield scrapy.Request(
-            next_url,
+        yield scrapy.Request(    #żądanie następnej strony
+            next_url, 
             callback=self.parse,
             cb_kwargs={"strona": next_strona},
             headers={"Referer": response.url},
         )
 
-    def parse_details(self, response, item):
-        loader = FlatLoader(item=item, response=response)
+    def parse_details(self, response, item): # Obsługuje stronę szczegółów jednego ogłoszenia. Scrapy wywołuje tę metodę gdy pobierze URL
+        loader = FlatLoader(item=item, response=response)  #item to pojemnik na dane zebrane w parse(cena, metraż)
 
         # ── Nowa struktura Gratki: .information-table__row ────────────────
         for row in response.css(".information-table__row"):
@@ -193,13 +194,14 @@ class GratkaSpider(scrapy.Spider):
 
         # Zdjęcia na podstronie /photo
         photo_url = response.url.rstrip("/") + "/photo"
-        yield scrapy.Request(
+        yield scrapy.Request(     #żądanie podstrony ze zdjęciami
             photo_url,
             callback=self.parse_photos,
             cb_kwargs={"item": item},
             headers={"Referer": response.url},
         )
 
+    #obsługa zdjęć ofert/miniaturek
     def parse_photos(self, response, item):
         loader = FlatLoader(item=item, response=response)
 
@@ -208,9 +210,9 @@ class GratkaSpider(scrapy.Spider):
             loader.add_value("liczba_zdjec", len(zdjecia))
             loader.add_value("zdjecie_url", zdjecia[0])
 
-        yield loader.load_item()
+        yield loader.load_item()   #zwraca w pełni skompletowany item, który przekazuje do pipelines a potem do bazy
 
-
+#obsługa pięter
 def _load_pietro(loader, value: str):
     """Parsuje piętro z wartości np. '1 z 5', '1/5', 'parter', '10', 'D'."""
     v = value.strip().lower()
@@ -228,7 +230,7 @@ def _parse_price(tekst):
     digits = re.sub(r"[^\d]", "", tekst.split("zł")[0])
     return int(digits) if digits else None
 
-
+#obsługa wszystkich liczb - metraż, pokoje, rok budowy
 def _parse_number(tekst):
     if not tekst:
         return None

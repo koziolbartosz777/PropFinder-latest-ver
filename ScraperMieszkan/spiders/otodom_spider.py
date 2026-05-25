@@ -31,7 +31,7 @@ OTODOM_HEADERS = {
 
 class OtodomSpider(scrapy.Spider):
     name = "otodom"
-
+    #obsługa linku aby wejść na odpowienią stronę otodom
     def start_requests(self):
         self.parsed_ids = load_parsed_ids(self.logger)
         for location_key, location in LOCATIONS.items():
@@ -46,14 +46,14 @@ class OtodomSpider(scrapy.Spider):
             )
 
     def parse(self, response, location_key, slug, page):
-        # Wykryj blokadę Cloudflare
+        # Wykrycie blokady Claudflare
         if response.status in (403, 429, 503) or b"cf-browser-verification" in response.body:
             self.logger.error(
                 f"[otodom] Cloudflare block (HTTP {response.status}) na stronie {page} — "
                 "spróbuj uruchomić spider ręcznie lub zmień IP."
             )
             return
-
+        #Jeśli strona jest pusta - obsługa tego
         raw_next_data = response.css("script#__NEXT_DATA__::text").get()
         if not raw_next_data:
             self.logger.warning(
@@ -62,7 +62,7 @@ class OtodomSpider(scrapy.Spider):
                 "Prawdopodobna blokada — brak danych otodom w tej sesji."
             )
             return
-
+        #Json na słownik pythona
         data = json.loads(raw_next_data)
         
         # Bezpieczne pobieranie ścieżki do ofert
@@ -172,7 +172,7 @@ class OtodomSpider(scrapy.Spider):
             headers=next_headers,
             cb_kwargs={"location_key": location_key, "slug": slug, "page": next_page},
         )
-
+    #opis ogłoszenia
     def parse_details(self, response, item):
         loader = FlatLoader(item=item, response=response)
         opis = response.css("div[data-cy='adPageAdDescription']::text").getall()

@@ -752,3 +752,33 @@ Successful    : 3
 Failed        : 0
 ────────────────────────────────────────────────────────────
 
+
+============================================================
+PropAgent scraper run started at 2026-05-24 21:00:02
+============================================================
+[otodom@krakow] Starting: C:\Users\bkozi\AppData\Local\Programs\Python\Python312\pythonw.exe -m scrapy crawl otodom -a miasto=krakow -a max_stron=999
+[otodom@krakow] Finished OK (exit 0)
+[gratka@krakow] Starting: C:\Users\bkozi\AppData\Local\Programs\Python\Python312\pythonw.exe -m scrapy crawl gratka -a miasto=krakow -a max_stron=999
+[gratka@krakow] Finished OK (exit 0)
+[nro@krakow] Starting: C:\Users\bkozi\AppData\Local\Programs\Python\Python312\pythonw.exe -m scrapy crawl nro -a miasto=krakow -a max_stron=999
+[nro@krakow] Finished OK (exit 0)
+
+[restore_otodom] Przywracanie ofert otodom oznaczonych gone przez blokadę…
+[restore_otodom] Przywrócono 1517 ofert otodom do active.
+
+[migrate] Backfilling NULL cena_za_m2 records…
+[migrate] Updated 0 rows.
+
+[migrate] Backfilling dzielnica for NRO from adres_pelny…
+[migrate] NRO dzielnica backfilled: 6 rows. Gratka city-as-dzielnica cleared: 0 rows.
+
+[mark_sold] Updating gone listings…
+[mark_sold] Done.
+
+────────────────────────────────────────────────────────────
+Run finished at 2026-05-24 22:08:13  (took 1:08:11.560811)
+Spiders run   : 3
+Successful    : 3
+Failed        : 0
+────────────────────────────────────────────────────────────
+
